@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import { jsPDF } from "jspdf";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 
-const ALBUM_KEY = "album_mvp_step_v4_stack";
-const MAX_PHOTOS = 6;
+const ALBUM_KEY = "album_mvp_step_v6_collage_4_adaptive_2x3";
+const DB_NAME = "album_mvp_db";
+const DB_VERSION = 1;
+const STORE_NAME = "photos";
+const MAX_PHOTOS = 4;
+const PHOTO_RATIO = 2 / 3; // W/H (10x15)
 
 function loadState() {
   try {
@@ -27,6 +30,137 @@ function safeSavePhotos(nextPhotos) {
   }
 }
 
+function openDB() {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === "undefined") {
+      reject(new Error("IndexedDB not available"));
+      return;
+    }
+
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: "id" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error("IndexedDB failed"));
+  });
+}
+
+async function putPhotoBlob(id, blob) {
+  const db = await openDB();
+  return await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    store.put({ id, blob, updatedAt: Date.now() });
+    tx.oncomplete = () => {
+      db.close();
+      resolve(true);
+    };
+    tx.onerror = () => {
+      const err = tx.error || new Error("IndexedDB write failed");
+      db.close();
+      reject(err);
+    };
+    tx.onabort = () => {
+      const err = tx.error || new Error("IndexedDB write aborted");
+      db.close();
+      reject(err);
+    };
+  });
+}
+
+async function getPhotoBlob(id) {
+  const db = await openDB();
+  return await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.get(id);
+    request.onsuccess = () => resolve(request.result?.blob || null);
+    request.onerror = () => reject(request.error || new Error("IndexedDB read failed"));
+    tx.oncomplete = () => db.close();
+    tx.onabort = () => db.close();
+    tx.onerror = () => db.close();
+  });
+}
+
+async function deletePhotoBlob(id) {
+  const db = await openDB();
+  return await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    store.delete(id);
+    tx.oncomplete = () => {
+      db.close();
+      resolve(true);
+    };
+    tx.onerror = () => {
+      const err = tx.error || new Error("IndexedDB delete failed");
+      db.close();
+      reject(err);
+    };
+    tx.onabort = () => {
+      const err = tx.error || new Error("IndexedDB delete aborted");
+      db.close();
+      reject(err);
+    };
+  });
+}
+
+async function clearAllBlobs() {
+  const db = await openDB();
+  return await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    store.clear();
+    tx.oncomplete = () => {
+      db.close();
+      resolve(true);
+    };
+    tx.onerror = () => {
+      const err = tx.error || new Error("IndexedDB clear failed");
+      db.close();
+      reject(err);
+    };
+    tx.onabort = () => {
+      const err = tx.error || new Error("IndexedDB clear aborted");
+      db.close();
+      reject(err);
+    };
+  });
+}
+
+function supportsMime(mime) {
+  if (typeof document === "undefined") return false;
+  try {
+    const canvas = document.createElement("canvas");
+    const dataUrl = canvas.toDataURL(mime);
+    return dataUrl.startsWith(`data:${mime}`);
+  } catch {
+    return false;
+  }
+}
+
+function isBlobUrl(url) {
+  return typeof url === "string" && url.startsWith("blob:");
+}
+
+function serializePhotosForStorage(photos, includeDataUrl) {
+  return photos.map((photo) => {
+    const base = {
+      id: photo.id,
+      createdAt: photo.createdAt,
+      type: photo.type,
+    };
+    if (includeDataUrl) {
+      return { ...base, dataUrl: photo.dataUrl };
+    }
+    return { ...base, blobId: photo.blobId || photo.id };
+  });
+}
+
 function safeId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -41,17 +175,10 @@ function detectOrientationSafe(dataUrl) {
   });
 }
 
-async function readFileAsDataUrl(file) {
-  return await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 async function loadImage(dataUrl) {
   const img = new Image();
+  if ("decoding" in img) img.decoding = "async";
+  if ("loading" in img) img.loading = "eager";
   img.src = dataUrl;
   await new Promise((resolve, reject) => {
     img.onload = resolve;
@@ -60,23 +187,78 @@ async function loadImage(dataUrl) {
   return img;
 }
 
-async function compressImageDataUrl(
+function dataUrlToBlob(dataUrl) {
+  const [header, data] = dataUrl.split(",");
+  const mimeMatch = header.match(/data:(.*?)(;|$)/);
+  const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+  const isBase64 = header.includes("base64");
+  const binary = isBase64 ? atob(data) : decodeURIComponent(data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mime });
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function canvasToBlob(canvas, mime, quality) {
+  return new Promise((resolve) => {
+    if (canvas.toBlob) {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else resolve(dataUrlToBlob(canvas.toDataURL(mime, quality)));
+      }, mime, quality);
+    } else {
+      resolve(dataUrlToBlob(canvas.toDataURL(mime, quality)));
+    }
+  });
+}
+
+async function createCompressedCanvas(
   dataUrl,
-  { maxSide = 1280, quality = 0.78, mime = "image/jpeg" } = {}
+  { maxSide = 1280, targetRatio } = {}
 ) {
   const img = await loadImage(dataUrl);
 
   const w0 = img.naturalWidth || img.width;
   const h0 = img.naturalHeight || img.height;
 
-  let w = w0;
-  let h = h0;
+  let sx = 0;
+  let sy = 0;
+  let sw = w0;
+  let sh = h0;
 
-  const biggest = Math.max(w0, h0);
+  if (typeof targetRatio === "number" && targetRatio > 0) {
+    const currentRatio = w0 / h0;
+    if (currentRatio > targetRatio) {
+      sw = Math.round(h0 * targetRatio);
+      sh = h0;
+      sx = Math.round((w0 - sw) / 2);
+      sy = 0;
+    } else if (currentRatio < targetRatio) {
+      sw = w0;
+      sh = Math.round(w0 / targetRatio);
+      sx = 0;
+      sy = Math.round((h0 - sh) / 2);
+    }
+  }
+
+  let w = sw;
+  let h = sh;
+
+  const biggest = Math.max(sw, sh);
   if (biggest > maxSide) {
     const scale = maxSide / biggest;
-    w = Math.round(w0 * scale);
-    h = Math.round(h0 * scale);
+    w = Math.round(sw * scale);
+    h = Math.round(sh * scale);
   }
 
   const canvas = document.createElement("canvas");
@@ -86,205 +268,445 @@ async function compressImageDataUrl(
 
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, w, h);
-  ctx.drawImage(img, 0, 0, w, h);
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
 
+  return canvas;
+}
+
+async function compressImageDataUrl(
+  dataUrl,
+  { maxSide = 1280, quality = 0.78, mime = "image/jpeg", targetRatio } = {}
+) {
+  const canvas = await createCompressedCanvas(dataUrl, { maxSide, targetRatio });
   return canvas.toDataURL(mime, quality);
 }
 
-// ===== PDF helpers =====
-const FRAME_COLORS = [
-  [11, 94, 215],
-  [255, 159, 67],
-  [46, 204, 113],
-  [155, 89, 182],
-  [231, 76, 60],
-  [52, 152, 219],
-];
-
-function fitRect(imgW, imgH, boxW, boxH) {
-  const imgRatio = imgW / imgH;
-  const boxRatio = boxW / boxH;
-
-  let w, h;
-  if (imgRatio > boxRatio) {
-    w = boxW;
-    h = w / imgRatio;
-  } else {
-    h = boxH;
-    w = h * imgRatio;
-  }
-
-  return { w, h, x: (boxW - w) / 2, y: (boxH - h) / 2 };
+async function compressImageToBlob(
+  dataUrl,
+  { maxSide = 1280, quality = 0.78, mime = "image/jpeg", targetRatio } = {}
+) {
+  const canvas = await createCompressedCanvas(dataUrl, { maxSide, targetRatio });
+  return await canvasToBlob(canvas, mime, quality);
 }
 
-async function makeFramedCardDataUrl(originalDataUrl, rgb) {
-  const img = await loadImage(originalDataUrl);
+/** ===== Collage JPG (photobooth) ADAPTATIVO ===== */
+const FRAME_COLORS = ["#0B5ED7", "#FF9F43", "#2ECC71", "#9B59B6"];
 
-  const w = img.naturalWidth || img.width;
-  const h = img.naturalHeight || img.height;
+function roundRect(ctx, x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
 
-  const border = Math.max(14, Math.round(Math.min(w, h) * 0.02));
-  const padding = Math.max(18, Math.round(Math.min(w, h) * 0.03));
+function drawImageContain(ctx, img, x, y, w, h) {
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
 
-  const cardW = w + padding * 2;
-  const cardH = h + padding * 2;
+  const scale = Math.min(w / iw, h / ih);
+  const dw = Math.round(iw * scale);
+  const dh = Math.round(ih * scale);
+  const dx = Math.round(x + (w - dw) / 2);
+  const dy = Math.round(y + (h - dh) / 2);
 
-  const canvas = document.createElement("canvas");
-  canvas.width = cardW;
-  canvas.height = cardH;
-  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, dx, dy, dw, dh);
+}
 
+function drawFramedSlot(ctx, img, x, y, w, h, frameColor) {
+  // “cartão” com sombra
+  ctx.save();
+  ctx.fillStyle = "#fff";
+  ctx.shadowColor = "rgba(0,0,0,0.12)";
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 8;
+  roundRect(ctx, x, y, w, h, 28);
+  ctx.fill();
+  ctx.restore();
+
+  // recorte
+  ctx.save();
+  roundRect(ctx, x, y, w, h, 28);
+  ctx.clip();
+
+  // fundo
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, cardW, cardH);
+  ctx.fillRect(x, y, w, h);
 
-  ctx.drawImage(img, padding, padding, w, h);
+  // imagem
+  drawImageContain(ctx, img, x, y, w, h);
 
-  ctx.lineWidth = border;
-  ctx.strokeStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
-  ctx.strokeRect(padding, padding, w, h);
+  ctx.restore();
 
-  return canvas.toDataURL("image/png");
+  // moldura colorida
+  ctx.lineWidth = 18;
+  ctx.strokeStyle = frameColor;
+  roundRect(ctx, x + 10, y + 10, w - 20, h - 20, 22);
+  ctx.stroke();
+
+  // contorno preto
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = "#111";
+  roundRect(ctx, x, y, w, h, 28);
+  ctx.stroke();
 }
 
-async function rotateDataUrl(dataUrl, angleDeg) {
-  const img = await loadImage(dataUrl);
+async function buildCollageJpgDataUrl(
+  photos,
+  {
+    title = "Um aninho de Heitor!",
+    subtitle = "Meu álbum",
+    width = 1200,
+    height = 1800,
+    quality = 0.92,
+  } = {}
+) {
+  // ✅ Foto “comercial” 10x15 (2:3)
+  const W = width;
+  const H = height;
 
-  const angle = (angleDeg * Math.PI) / 180;
-  const w = img.naturalWidth || img.width;
-  const h = img.naturalHeight || img.height;
+  const outerMargin = 54;
+  const gap = 22;
 
-  const sin = Math.abs(Math.sin(angle));
-  const cos = Math.abs(Math.cos(angle));
-  const newW = Math.ceil(w * cos + h * sin);
-  const newH = Math.ceil(w * sin + h * cos);
+  // Banner inferior
+  const bannerH = 300;
 
-  const canvas = document.createElement("canvas");
-  canvas.width = newW;
-  canvas.height = newH;
-  const ctx = canvas.getContext("2d");
+  // Área superior de fotos
+  const gridX = outerMargin;
+  const gridY = outerMargin;
+  const gridW = W - outerMargin * 2;
+  const gridH = H - bannerH - outerMargin * 2 - 20; // respiro antes do banner
 
-  ctx.clearRect(0, 0, newW, newH);
-
-  ctx.translate(newW / 2, newH / 2);
-  ctx.rotate(angle);
-  ctx.drawImage(img, -w / 2, -h / 2);
-
-  return canvas.toDataURL("image/png");
-}
-
-function buildPdfBlobFromCards(cardDataUrls) {
-  const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
-
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-
-  const BLUE = [11, 94, 215];
-  const headerBarH = 14;
-  const footerBarH = 12;
-  const margin = 10;
-
-  const cols = 2;
-  const rows = 3;
-  const gutter = 6;
-
-  function paintHeaderFooter() {
-    doc.setFillColor(...BLUE);
-    doc.rect(0, 0, pageW, headerBarH, "F");
-    doc.rect(0, pageH - footerBarH, pageW, footerBarH, "F");
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text("Meu álbum com Heitor", pageW / 2, 9.5, { align: "center" });
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text("Festinha do Heitor", pageW / 2, pageH - 4, { align: "center" });
+  // Carrega imagens existentes (até 4)
+  const used = photos.slice(0, 4);
+  const loaded = [];
+  for (let i = 0; i < used.length; i++) {
+    const img = await loadImage(used[i].dataUrl);
+    loaded.push({ ...used[i], img });
   }
 
-  paintHeaderFooter();
+  const n = loaded.length;
 
-  const gridTop = headerBarH + margin;
-  const gridBottom = pageH - footerBarH - margin;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
 
-  const usableW = pageW - margin * 2;
-  const usableH = gridBottom - gridTop;
+  // Fundo
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
 
-  const cellW = (usableW - gutter * (cols - 1)) / cols;
-  const cellH = (usableH - gutter * (rows - 1)) / rows;
+  // Borda externa
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = "#111";
+  roundRect(ctx, 24, 24, W - 48, H - 48, 26);
+  ctx.stroke();
 
-  cardDataUrls.forEach((cardUrl, i) => {
-    const pageIndex = Math.floor(i / (cols * rows));
-    const indexInPage = i % (cols * rows);
+  // Se não tiver foto, só faz um layout “limpo” (sem slots)
+  if (n > 0) {
+    const slots = [];
 
-    if (pageIndex > 0 && indexInPage === 0) {
-      doc.addPage();
-      paintHeaderFooter();
+    if (n === 1) {
+      const square = Math.min(gridW, gridH);
+      const x = gridX + (gridW - square) / 2;
+      const y = gridY + (gridH - square) / 2;
+      slots.push({ x, y, w: square, h: square });
+    } else if (n === 2) {
+      const square = Math.min((gridW - gap) / 2, gridH);
+      const totalW = square * 2 + gap;
+      const x1 = gridX + (gridW - totalW) / 2;
+      const y = gridY + (gridH - square) / 2;
+      slots.push({ x: x1, y, w: square, h: square });
+      slots.push({ x: x1 + square + gap, y, w: square, h: square });
+    } else {
+      const square = Math.min((gridW - gap) / 2, (gridH - gap) / 2);
+      const totalW = square * 2 + gap;
+      const totalH = square * 2 + gap;
+      const startX = gridX + (gridW - totalW) / 2;
+      const startY = gridY + (gridH - totalH) / 2;
+      const coords = [
+        [startX, startY],
+        [startX + square + gap, startY],
+        [startX, startY + square + gap],
+        [startX + square + gap, startY + square + gap],
+      ];
+      for (let i = 0; i < Math.min(n, 4); i += 1) {
+        const [x, y] = coords[i];
+        slots.push({ x, y, w: square, h: square });
+      }
     }
 
-    const r = Math.floor(indexInPage / cols);
-    const c = indexInPage % cols;
+    for (let i = 0; i < Math.min(n, slots.length); i += 1) {
+      const slot = slots[i];
+      const photo = loaded[i];
+      drawFramedSlot(
+        ctx,
+        photo.img,
+        slot.x,
+        slot.y,
+        slot.w,
+        slot.h,
+        FRAME_COLORS[i % FRAME_COLORS.length]
+      );
+    }
+  }
 
-    const x0 = margin + c * (cellW + gutter);
-    const y0 = gridTop + r * (cellH + gutter);
+  // Banner inferior
+  const bannerY = H - bannerH - 54;
+  const bannerX = 64;
+  const bannerW = W - 128;
 
-    const pad = 2.5;
-    const boxW = cellW - pad * 2;
-    const boxH = cellH - pad * 2;
+  ctx.save();
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(0,0,0,0.10)";
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 8;
+  roundRect(ctx, bannerX, bannerY, bannerW, bannerH, 28);
+  ctx.fill();
+  ctx.restore();
 
-    const props = doc.getImageProperties(cardUrl);
-    const placed = fitRect(props.width, props.height, boxW, boxH);
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = "#111";
+  roundRect(ctx, bannerX, bannerY, bannerW, bannerH, 28);
+  ctx.stroke();
 
-    const drawX = x0 + pad + placed.x;
-    const drawY = y0 + pad + placed.y;
+  // Texto
+  ctx.fillStyle = "#111";
+  ctx.textAlign = "center";
 
-    doc.addImage(cardUrl, "PNG", drawX, drawY, placed.w, placed.h);
-  });
+  ctx.font = "800 66px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText(title, W / 2, bannerY + 125);
 
-  return doc.output("blob");
+  ctx.font = "700 36px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillStyle = "rgba(0,0,0,0.75)";
+  ctx.fillText(subtitle, W / 2, bannerY + 205);
+
+  loaded.length = 0;
+
+  return canvas.toDataURL("image/jpeg", quality);
 }
 
-// ===== App =====
 export default function App() {
-  const [photos, setPhotos] = useState(() => loadState().photos);
+  const [photos, setPhotos] = useState([]);
 
   const fileInputAddRef = useRef(null);
   const fileInputSwapRef = useRef(null);
   const [swapId, setSwapId] = useState(null);
 
-  const [view, setView] = useState("album"); // "album" | "pdf"
-  const [pdfUrl, setPdfUrl] = useState("");
+  const [view, setView] = useState("album"); // "album" | "collage"
+  const [collageUrl, setCollageUrl] = useState("");
+
+  const lastAddedRef = useRef(null);
+  const prevLenRef = useRef(photos.length);
+  const prevUrlsRef = useRef(new Set());
+  const warnedCompatRef = useRef(false);
+  const idbReadyRef = useRef(null);
+  const storageModeRef = useRef("idb");
 
   const isMobile =
     typeof navigator !== "undefined" &&
     /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-  useEffect(() => {
-    return () => {
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-    };
-  }, [pdfUrl]);
-
   const count = photos.length;
   const isLimitReached = count >= MAX_PHOTOS;
-  const addBtnText = count === 0 ? "Adicionar uma foto" : "Adicionar próxima foto";
+  const compressOptions = useMemo(() => {
+    if (!isMobile) {
+      return { maxSide: 1280, quality: 0.78, mime: "image/jpeg" };
+    }
 
-  function persist(nextPhotos) {
-    const ok = safeSavePhotos(nextPhotos);
-    if (!ok) {
-      alert(
-        "Seu celular ficou sem espaço para salvar as fotos (limite do navegador). " +
-          "Dica: apague o álbum (Limpar meu álbum)."
-      );
+    const mobileMime = supportsMime("image/webp") ? "image/webp" : "image/jpeg";
+    return {
+      maxSide: 640,
+      quality: 0.62,
+      mime: mobileMime,
+    };
+  }, [isMobile]);
+
+  const addBtnText = useMemo(
+    () => (count === 0 ? "Adicionar uma foto" : "Adicionar próxima foto"),
+    [count]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (collageUrl?.startsWith("blob:")) URL.revokeObjectURL(collageUrl);
+    };
+  }, [collageUrl]);
+
+  useEffect(() => {
+    const nextUrls = new Set(photos.map((p) => p.dataUrl).filter(isBlobUrl));
+    prevUrlsRef.current.forEach((url) => {
+      if (!nextUrls.has(url)) URL.revokeObjectURL(url);
+    });
+    prevUrlsRef.current = nextUrls;
+  }, [photos]);
+
+  useEffect(() => {
+    return () => {
+      prevUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      prevUrlsRef.current.clear();
+    };
+  }, []);
+
+  // ✅ Rola para a última foto adicionada (corrige “não renderiza / não foca”)
+  useEffect(() => {
+    const prev = prevLenRef.current;
+    const now = photos.length;
+
+    if (now > prev) {
+      requestAnimationFrame(() => {
+        lastAddedRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+    }
+    prevLenRef.current = now;
+  }, [photos.length]);
+
+  function notifyCompatOnce() {
+    if (warnedCompatRef.current) return;
+    warnedCompatRef.current = true;
+    alert(
+      "Seu navegador não suportou armazenamento avançado. " +
+        "Vamos usar modo compatibilidade (LocalStorage)."
+    );
+  }
+
+  function switchToLocalStorage() {
+    storageModeRef.current = "ls";
+    notifyCompatOnce();
+  }
+
+  async function ensureIdbReady() {
+    if (idbReadyRef.current !== null) return idbReadyRef.current;
+    try {
+      const db = await openDB();
+      db.close();
+      idbReadyRef.current = true;
+      return true;
+    } catch (err) {
+      console.error("IndexedDB unavailable:", err);
+      idbReadyRef.current = false;
+      switchToLocalStorage();
       return false;
     }
-    setPhotos(nextPhotos);
+  }
+
+  function alertStorageFull() {
+    alert(
+      "Seu celular ficou sem espaço para salvar as fotos (limite do navegador). " +
+        "Dica: gere o JPG e depois limpe o álbum."
+    );
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrate() {
+      const stored = loadState().photos || [];
+      if (!stored.length) {
+        if (!cancelled) setPhotos([]);
+        return;
+      }
+
+      const normalized = stored.map((p) => ({
+        id: p.id,
+        createdAt: p.createdAt,
+        type: p.type || "portrait",
+        dataUrl: p.dataUrl,
+        blobId: p.blobId || p.id,
+      }));
+
+      const idbOk = await ensureIdbReady();
+      if (!idbOk) {
+        storageModeRef.current = "ls";
+        if (!cancelled) setPhotos(normalized.filter((p) => p.dataUrl));
+        return;
+      }
+
+      const hydrated = [];
+      let needsSave = false;
+
+      for (const meta of normalized) {
+        let blob = null;
+        try {
+          blob = await getPhotoBlob(meta.blobId);
+        } catch (err) {
+          console.error("IndexedDB read failed:", err);
+          idbReadyRef.current = false;
+          switchToLocalStorage();
+          if (!cancelled) setPhotos(normalized.filter((p) => p.dataUrl));
+          return;
+        }
+
+        if (!blob && meta.dataUrl) {
+          try {
+            blob = dataUrlToBlob(meta.dataUrl);
+            await putPhotoBlob(meta.blobId, blob);
+            needsSave = true;
+          } catch (err) {
+            console.error("IndexedDB migration failed:", err);
+            switchToLocalStorage();
+            if (!cancelled) setPhotos(normalized.filter((p) => p.dataUrl));
+            return;
+          }
+        }
+
+        if (blob) {
+          if (meta.dataUrl) needsSave = true;
+          const url = URL.createObjectURL(blob);
+          hydrated.push({ ...meta, dataUrl: url });
+        } else if (meta.dataUrl) {
+          hydrated.push(meta);
+        }
+      }
+
+      if (!cancelled) {
+        setPhotos(hydrated);
+      }
+
+      if (needsSave) {
+        safeSavePhotos(serializePhotosForStorage(hydrated, false));
+      }
+    }
+
+    hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function persist(nextPhotos) {
+    const normalized = nextPhotos.map((photo) => ({
+      ...photo,
+      blobId: photo.blobId || photo.id,
+    }));
+    const includeDataUrl = storageModeRef.current === "ls";
+    const ok = safeSavePhotos(serializePhotosForStorage(normalized, includeDataUrl));
+    if (!ok) {
+      alertStorageFull();
+      return false;
+    }
+    setPhotos(normalized);
     return true;
   }
 
-  function clearAlbum() {
+  async function clearAlbum() {
     if (!confirm("Apagar TODAS as suas fotos?")) return;
+    if (storageModeRef.current === "idb") {
+      try {
+        await clearAllBlobs();
+      } catch (err) {
+        console.error("IndexedDB clear failed:", err);
+        switchToLocalStorage();
+      }
+    }
     persist([]);
+    setView("album");
   }
 
   function addNextPhoto() {
@@ -297,6 +719,8 @@ export default function App() {
     e.target.value = "";
     if (!file) return;
 
+    const fileUrl = URL.createObjectURL(file);
+
     try {
       if (!file.type.startsWith("image/")) {
         alert("Escolha uma imagem.");
@@ -308,30 +732,69 @@ export default function App() {
         return;
       }
 
-      const rawDataUrl = await readFileAsDataUrl(file);
-      const dataUrl = await compressImageDataUrl(rawDataUrl, {
-        maxSide: 1280,
-        quality: 0.78,
-        mime: "image/jpeg",
-      });
+      const type = await detectOrientationSafe(fileUrl);
+      const targetRatio = type === "landscape" ? 1 / PHOTO_RATIO : PHOTO_RATIO;
+      const id = safeId();
+      const createdAt = Date.now();
 
-      const type = await detectOrientationSafe(dataUrl);
+      const useIdb = storageModeRef.current === "idb" && (await ensureIdbReady());
+      if (useIdb) {
+        const blob = await compressImageToBlob(fileUrl, {
+          ...compressOptions,
+          targetRatio,
+        });
 
-      const nextPhotos = [
-        ...photos,
-        { id: safeId(), dataUrl, type, createdAt: Date.now() },
-      ];
+        try {
+          await putPhotoBlob(id, blob);
+        } catch (err) {
+          console.error("IndexedDB write failed:", err);
+          idbReadyRef.current = false;
+          switchToLocalStorage();
+          if (err?.name === "QuotaExceededError") alertStorageFull();
+          const dataUrl = await blobToDataUrl(blob);
+          const nextPhotos = [...photos, { id, dataUrl, type, createdAt }];
+          persist(nextPhotos);
+          return;
+        }
 
-      persist(nextPhotos);
+        const previewUrl = URL.createObjectURL(blob);
+        const nextPhotos = [
+          ...photos,
+          { id, blobId: id, dataUrl: previewUrl, type, createdAt },
+        ];
+        if (!persist(nextPhotos)) {
+          URL.revokeObjectURL(previewUrl);
+        }
+      } else {
+        const dataUrl = await compressImageDataUrl(fileUrl, {
+          ...compressOptions,
+          targetRatio,
+        });
+        const nextPhotos = [...photos, { id, dataUrl, type, createdAt }];
+        persist(nextPhotos);
+      }
     } catch (err) {
       console.error("onAddFileChange error:", err);
       alert("Falha ao adicionar foto no celular. Vamos ajustar.");
+    } finally {
+      URL.revokeObjectURL(fileUrl);
     }
   }
 
-  function askRemovePhoto(id) {
+  async function askRemovePhoto(id) {
     if (!confirm("Remover esta foto?")) return;
+    if (storageModeRef.current === "idb") {
+      const target = photos.find((p) => p.id === id);
+      const blobId = target?.blobId || id;
+      try {
+        await deletePhotoBlob(blobId);
+      } catch (err) {
+        console.error("IndexedDB delete failed:", err);
+        switchToLocalStorage();
+      }
+    }
     persist(photos.filter((p) => p.id !== id));
+    setView("album");
   }
 
   function askSwapPhoto(id) {
@@ -344,6 +807,8 @@ export default function App() {
     e.target.value = "";
     if (!file || !swapId) return;
 
+    const fileUrl = URL.createObjectURL(file);
+
     try {
       if (!file.type.startsWith("image/")) {
         alert("Escolha uma imagem.");
@@ -351,65 +816,108 @@ export default function App() {
         return;
       }
 
-      const rawDataUrl = await readFileAsDataUrl(file);
-      const dataUrl = await compressImageDataUrl(rawDataUrl, {
-        maxSide: 1280,
-        quality: 0.78,
-        mime: "image/jpeg",
-      });
+      const type = await detectOrientationSafe(fileUrl);
+      const targetRatio = type === "landscape" ? 1 / PHOTO_RATIO : PHOTO_RATIO;
+      const current = photos.find((p) => p.id === swapId);
+      const blobId = current?.blobId || swapId;
+      const createdAt = Date.now();
 
-      const type = await detectOrientationSafe(dataUrl);
+      const useIdb = storageModeRef.current === "idb" && (await ensureIdbReady());
+      if (useIdb) {
+        const blob = await compressImageToBlob(fileUrl, {
+          ...compressOptions,
+          targetRatio,
+        });
 
-      const next = photos.map((p) =>
-        p.id === swapId ? { ...p, dataUrl, type, createdAt: Date.now() } : p
-      );
+        try {
+          await putPhotoBlob(blobId, blob);
+        } catch (err) {
+          console.error("IndexedDB write failed:", err);
+          idbReadyRef.current = false;
+          switchToLocalStorage();
+          if (err?.name === "QuotaExceededError") alertStorageFull();
+          const dataUrl = await blobToDataUrl(blob);
+          const next = photos.map((p) =>
+            p.id === swapId ? { ...p, dataUrl, type, createdAt } : p
+          );
+          setSwapId(null);
+          persist(next);
+          return;
+        }
 
-      setSwapId(null);
-      persist(next);
+        const previewUrl = URL.createObjectURL(blob);
+        const next = photos.map((p) =>
+          p.id === swapId ? { ...p, dataUrl: previewUrl, type, createdAt, blobId } : p
+        );
+
+        setSwapId(null);
+        if (!persist(next)) {
+          URL.revokeObjectURL(previewUrl);
+        }
+      } else {
+        const dataUrl = await compressImageDataUrl(fileUrl, {
+          ...compressOptions,
+          targetRatio,
+        });
+
+        const next = photos.map((p) =>
+          p.id === swapId ? { ...p, dataUrl, type, createdAt } : p
+        );
+
+        setSwapId(null);
+        persist(next);
+      }
     } catch (err) {
       console.error("onSwapFileChange error:", err);
       alert("Falha ao trocar foto no celular. Vamos ajustar.");
       setSwapId(null);
+    } finally {
+      URL.revokeObjectURL(fileUrl);
     }
   }
 
-  async function openPdfView() {
+  async function openCollageView() {
     if (photos.length === 0) {
       alert("Adicione pelo menos 1 foto.");
       return;
     }
 
+    setView("collage");
+    setCollageUrl("");
+
     try {
-      const angle = 15;
-      const cards = [];
+      const baseOptions = {
+        title: "Um aninho de Heitor!",
+        subtitle: "Meu álbum",
+        width: isMobile ? 900 : 1200,
+        height: isMobile ? 1350 : 1800,
+        quality: isMobile ? 0.9 : 0.92,
+      };
 
-      for (let i = 0; i < photos.length; i++) {
-        const p = photos[i];
-        const rgb = FRAME_COLORS[i % FRAME_COLORS.length];
+      let dataUrl = "";
 
-        const card = await makeFramedCardDataUrl(p.dataUrl, rgb);
-
-        const col = i % 2;
-        const ang = col === 0 ? -angle : angle;
-
-        const rotatedCard = await rotateDataUrl(card, ang);
-        cards.push(rotatedCard);
+      try {
+        dataUrl = await buildCollageJpgDataUrl(photos, baseOptions);
+      } catch (err) {
+        if (!isMobile) throw err;
+        dataUrl = await buildCollageJpgDataUrl(photos, {
+          ...baseOptions,
+          width: 720,
+          height: 1080,
+          quality: 0.85,
+        });
       }
 
-      const blob = buildPdfBlobFromCards(cards);
-      const url = URL.createObjectURL(blob);
-
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-      setPdfUrl(url);
-      setView("pdf");
-
-      // ✅ MOBILE: abre no viewer nativo do Chrome/Android
-      if (isMobile) {
-        window.open(url, "_blank");
-      }
+      if (collageUrl?.startsWith("blob:")) URL.revokeObjectURL(collageUrl);
+      setCollageUrl(dataUrl);
     } catch (e) {
-      console.error("PDF error:", e);
-      alert("Falha ao gerar o PDF. Vamos ajustar.");
+      console.error("Collage error:", e);
+      if (isMobile) {
+        alert("Seu celular está com pouca memória. Feche outras abas/apps e tente novamente.");
+      } else {
+        alert("Falha ao gerar o álbum em JPG. Vamos ajustar.");
+      }
+      setView("album");
     }
   }
 
@@ -417,17 +925,14 @@ export default function App() {
     setView("album");
   }
 
-  function downloadPdfAndReturn() {
-    if (!pdfUrl) return;
-
+  async function downloadCollage() {
+    if (!collageUrl) return;
     const a = document.createElement("a");
-    a.href = pdfUrl;
-    a.download = "meu-album-com-heitor.pdf";
+    a.href = collageUrl;
+    a.download = "album-heitor.jpg";
     document.body.appendChild(a);
     a.click();
     a.remove();
-
-    setView("album");
   }
 
   return (
@@ -474,69 +979,61 @@ export default function App() {
                   <div className="cardTop">Seu álbum está vazio</div>
                   <div className="previewArea portrait">
                     <div className="placeholder">
-                      Clique no botão abaixo para tirar/enviar sua primeira foto
+                      Clique em <b>{addBtnText}</b> para tirar/enviar sua primeira foto
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="grid">
-                  {photos.map((p, idx) => (
-                    <div className="card" key={p.id}>
-                      <div className="cardTop">
-                        Foto {idx + 1} •{" "}
-                        {p.type === "portrait" ? "Vertical" : "Horizontal"}
-                      </div>
+                  {photos.map((p, idx) => {
+                    const isLast = idx === photos.length - 1;
+                    return (
+                      <div className="card" key={p.id} ref={isLast ? lastAddedRef : null}>
+                        <div className="cardTop">
+                          Foto {idx + 1} • {p.type === "portrait" ? "Vertical" : "Horizontal"}
+                        </div>
 
-                      <div className={`previewArea ${p.type}`}>
-                        <img
-                          className="previewImg framedImg"
-                          style={{
-                            "--frame": `rgb(${FRAME_COLORS[idx % 6].join(",")})`,
-                          }}
-                          src={p.dataUrl}
-                          alt={`Foto ${idx + 1}`}
-                        />
-                      </div>
+                        <div className={`previewArea ${p.type}`}>
+                          <img
+                            className="previewImg framedImg"
+                            src={p.dataUrl}
+                            alt={`Foto ${idx + 1}`}
+                          />
+                        </div>
 
-                      <div className="photoBar">
-                        <button
-                          className="btn btnSecondary"
-                          onClick={() => askSwapPhoto(p.id)}
-                        >
-                          Trocar foto
-                        </button>
-                        <button
-                          className="btn btnSecondary"
-                          onClick={() => askRemovePhoto(p.id)}
-                        >
-                          Remover foto
-                        </button>
+                        <div className="photoBar">
+                          <button className="btn btnSecondary" onClick={() => askSwapPhoto(p.id)}>
+                            Trocar foto
+                          </button>
+                          <button className="btn btnSecondary" onClick={() => askRemovePhoto(p.id)}>
+                            Remover foto
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </>
           ) : (
-            <div className="pdfWrap">
-              {/* ✅ Desktop: preview no iframe / Mobile: texto simples (pq abre em nova aba) */}
-              {!isMobile ? (
-                pdfUrl ? (
-                  <iframe className="pdfFrame" title="PDF do álbum" src={pdfUrl} />
-                ) : (
-                  <div className="card">
-                    <div className="cardTop">Gerando PDF…</div>
-                    <div className="placeholder">Aguarde…</div>
+            <div className="collageWrap">
+              <div className="hint">
+                {isMobile
+                  ? "Seu álbum foi gerado em JPG (formato 10x15). Baixe e compartilhe."
+                  : "Prévia do álbum completo em JPG (formato 10x15)."}
+              </div>
+
+              {collageUrl ? (
+                <div className="card">
+                  <div className="cardTop">Álbum completo (JPG)</div>
+                  <div className="collagePreview">
+                    <img className="collageImg" src={collageUrl} alt="Álbum completo" />
                   </div>
-                )
+                </div>
               ) : (
                 <div className="card">
-                  <div className="cardTop">PDF pronto ✅</div>
-                  <div className="placeholder">
-                    O PDF foi aberto em outra aba do Chrome.
-                    <br />
-                    Se não abriu, toque em <b>Baixar</b>.
-                  </div>
+                  <div className="cardTop">Gerando…</div>
+                  <div className="placeholder">Aguarde…</div>
                 </div>
               )}
             </div>
@@ -544,25 +1041,28 @@ export default function App() {
         </div>
 
         {view === "album" ? (
-          <div className="bottomBar">
-            {isLimitReached ? (
-              <button className="btn btnPrimary bigAdd" onClick={openPdfView}>
-                Visualizar álbum completo
-              </button>
-            ) : (
-              <button className="btn btnPrimary bigAdd" onClick={addNextPhoto}>
-                {addBtnText}
-              </button>
-            )}
+          <div className="bottomBar two">
+            <button className="btn btnSecondary bigAdd" onClick={openCollageView}>
+              Ver álbum completo (JPG)
+            </button>
+
+            <button
+              className="btn btnPrimary bigAdd"
+              onClick={addNextPhoto}
+              disabled={isLimitReached}
+              title={isLimitReached ? "Limite atingido" : ""}
+            >
+              {isLimitReached ? "Limite atingido" : addBtnText}
+            </button>
           </div>
         ) : (
           <div className="bottomBar">
-            <div className="pdfActions">
+            <div className="collageActions">
               <button className="btn btnSecondary" onClick={backToAlbum}>
                 Voltar
               </button>
-              <button className="btn btnPrimary" onClick={downloadPdfAndReturn}>
-                Baixar
+              <button className="btn btnPrimary" onClick={downloadCollage}>
+                Baixar JPG
               </button>
             </div>
           </div>
