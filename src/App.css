@@ -1,0 +1,276 @@
+:root{
+  --blue: #0B5ED7;
+  --bg: #f7f8fb;
+  --card-border: #e9ebf2;
+  --muted: rgba(0,0,0,0.65);
+
+  --footerH: 44px;
+  --barH: 64px;
+
+  --safeB: env(safe-area-inset-bottom, 0px);
+  --safeT: env(safe-area-inset-top, 0px);
+}
+
+*{ box-sizing: border-box; }
+
+html, body{
+  height: 100%;
+}
+
+body{
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg);
+}
+
+/* Layout */
+.page{
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Header */
+.header{
+  padding: 14px 16px;
+  padding-top: calc(14px + var(--safeT));
+  background: var(--blue);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header h1{
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.header p{
+  margin: 6px 0 0;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+/* Buttons */
+.btn{
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.btn:disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btnPrimary{
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+
+.btnSecondary{
+  background: #fff;
+  border-color: #dfe3ee;
+  color: #111;
+  font-weight: 600;
+}
+
+.btnGhost{
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border-color: rgba(255,255,255,0.35);
+}
+
+/* Main scroll */
+.main{
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px;
+
+  /* ✅ espaço p/ bottomBar + footer */
+  padding-bottom: calc(12px + var(--barH) + var(--footerH) + var(--safeB) + 14px);
+}
+
+/* Container */
+.container{
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Cards */
+.card{
+  background: #fff;
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.cardTop{
+  padding: 8px 12px;
+  font-size: 13px;
+  background: #fafbff;
+  border-bottom: 1px solid #eee;
+  opacity: 0.9;
+}
+
+/* Preview slot */
+.previewArea{
+  background: #f2f4f8;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.previewArea.portrait{
+  aspect-ratio: 9 / 16;
+  max-height: 46vh;
+}
+
+.previewArea.landscape{
+  aspect-ratio: 16 / 9;
+  max-height: 34vh;
+}
+
+.previewImg{
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  background: #fff;
+}
+
+/* Moldura na foto */
+.framedImg{
+  border: 6px solid var(--frame, #0B5ED7);
+  border-radius: 10px;
+}
+
+.placeholder{
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.photoBar{
+  padding: 10px 12px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.grid{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hint{
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.bigAdd{
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  font-size: 16px;
+}
+
+/* Bottom fixed bar */
+.bottomBar{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--footerH) + var(--safeB));
+  height: var(--barH);
+
+  background: #fff;
+  border-top: 1px solid #e5e5e5;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 12px;
+  z-index: 100;
+
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+}
+
+.bottomBar .btn{
+  max-width: 720px;
+}
+
+/* PDF */
+.pdfWrap{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pdfFrame{
+  width: 100%;
+  height: calc(100dvh - 260px);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.pdfActions{
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.pdfActions .btn{
+  flex: 1;
+}
+
+/* Footer FIXO (agora aparece sempre) */
+.footer{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: calc(var(--footerH) + var(--safeB));
+  padding-bottom: var(--safeB);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--blue);
+  color: #fff;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+
+  z-index: 90;
+}
+
+@media (max-width: 420px){
+  .header h1{ font-size: 18px; }
+  .btn{ padding: 10px 12px; }
+  .bigAdd{ font-size: 15px; }
+  .framedImg{ border-width: 5px; }
+  .pdfFrame{ height: calc(100dvh - 275px); }
+}
