@@ -1,0 +1,182 @@
+.memory-page {
+  min-height: calc(100vh - var(--headerTotal) - var(--footerTotal));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.memory-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.memory-kicker {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--secondary);
+}
+
+.memory-header h1 {
+  margin: 0;
+  font-family: "Playfair Display", "Times New Roman", serif;
+  font-size: 26px;
+}
+
+.memory-sub {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.memory-board {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.memory-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  align-content: center;
+  justify-items: center;
+}
+
+.memory-grid.is-locked {
+  pointer-events: none;
+}
+
+.card {
+  width: min(100%, 90px);
+  aspect-ratio: 2 / 3;
+  border: 2px solid rgba(17, 17, 17, 0.15);
+  border-radius: 14px;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  perspective: 900px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.card:disabled {
+  cursor: default;
+}
+
+.card.is-removed {
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
+}
+
+.card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition: transform 0.45s ease;
+  border-radius: 12px;
+}
+
+.card.is-flipped .card-inner {
+  transform: scale(1.02);
+}
+
+.card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 2px rgba(252, 211, 77, 0.7);
+}
+
+.memory-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.memory-controls .btn {
+  min-width: 200px;
+}
+
+.memory-celebration {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 12px;
+  font-weight: 800;
+  font-size: clamp(18px, 4vw, 28px);
+  color: #0f2b5c;
+  pointer-events: none;
+  animation: celebratePop 0.6s ease-out;
+  text-shadow: 0 6px 16px rgba(255, 255, 255, 0.9);
+}
+
+@keyframes celebratePop {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 420px) {
+  .memory-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .card {
+    width: min(100%, 86px);
+  }
+}
+
+@media (min-width: 720px) {
+  .memory-page {
+    padding: 20px 24px 26px;
+  }
+
+  .memory-header h1 {
+    font-size: 30px;
+  }
+
+  .memory-sub {
+    font-size: 15px;
+  }
+
+  .memory-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    width: min(100%, 120px);
+  }
+}
+
+@media (min-width: 900px) {
+  .memory-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  .card {
+    width: min(100%, 135px);
+  }
+}
