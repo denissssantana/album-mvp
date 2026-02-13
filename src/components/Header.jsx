@@ -3,8 +3,9 @@ import { NavLink, useLocation } from "react-router-dom";
 
 const navItems = [
   { to: "/", label: "Início" },
+  { to: "/super-heitor", label: "Super Heitor" },
   { to: "/jogo", label: "Jogo da Memória" },
-  { to: "/album", label: "Álbum de Fotos" },
+  { to: "/album", label: "Álbum Virtual" },
 ];
 
 export default function Header() {

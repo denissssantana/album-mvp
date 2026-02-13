@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import hero1 from "../assets/memory/hero1.jpeg";
 import hero2 from "../assets/memory/hero2.jpeg";
 import hero3 from "../assets/memory/hero3.jpeg";
@@ -172,8 +171,7 @@ export default function JogoMemoria() {
   return (
     <div className="memory-page">
       <div className="memory-header">
-        <span className="memory-kicker">Jogo da Memoria</span>
-        <h1>Encontre os pares</h1>
+        <h1 className="page-title">Jogo da Memoria</h1>
         <p className="memory-sub">
           Toque nas cartas e encontre as imagens iguais.
         </p>
@@ -197,30 +195,35 @@ export default function JogoMemoria() {
                 disabled={locked || isRemoved}
               >
                 <span className="card-inner">
-                  <img
-                    className="card-img"
-                    src={isFlipped ? card.image : backImage}
-                    alt={isFlipped ? card.label : "Verso da carta"}
-                  />
+                  <span className="card-face card-back">
+                    <img
+                      className="card-img"
+                      src={backImage}
+                      alt="Verso da carta"
+                    />
+                  </span>
+                  <span className="card-face card-front">
+                    <img className="card-img" src={card.image} alt={card.label} />
+                  </span>
                 </span>
               </button>
             );
           })}
         </div>
-        {isComplete && (
-          <div className="memory-celebration" aria-live="polite">
-            Parabens! Voce completou o jogo!
+        <div
+          className={`memory-celebration${isComplete ? " is-visible" : ""}`}
+          aria-live="polite"
+        >
+          <div className="memory-celebration-card">
+            🎉 Parabéns! Missão concluída, herói! 🦸‍♂️
           </div>
-        )}
+        </div>
       </div>
 
       <div className="memory-controls">
         <button className="btn btnPrimary" onClick={startGame} type="button">
           Reiniciar jogo
         </button>
-        <Link className="btn btnSecondary" to="/">
-          Voltar para inicio
-        </Link>
       </div>
     </div>
   );

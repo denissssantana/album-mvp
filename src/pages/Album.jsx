@@ -936,9 +936,10 @@ export default function Album() {
 
   return (
     <div className="albumPage">
+      <h1 className="page-title albumPageTitle">Album Virtual</h1>
       <header className="albumHeader">
         <div>
-          <h1>Aniversário do HEITOR</h1>
+          <h2>Aniversario do HEITOR</h2>
           <p>
             Suas fotos: <b>{count}</b> / {MAX_PHOTOS}
           </p>
@@ -1042,7 +1043,7 @@ export default function Album() {
         {view === "album" ? (
           <div className="bottomBar two">
             <button className="btn btnSecondary bigAdd" onClick={openCollageView}>
-              Ver álbum completo (JPG)
+              Ver album completo
             </button>
 
             <button
