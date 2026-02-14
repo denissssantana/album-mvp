@@ -328,8 +328,9 @@ a {
 .landingPage {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 14px 14px 34px;
+  gap: 16px;
+  padding: 14px 14px calc(14px + 18px);
+  min-height: calc(100dvh - var(--headerTotal) - var(--footerTotal));
   max-width: 980px;
   margin: 0 auto;
   animation: pageEnter 0.32s ease-in-out both;
@@ -340,14 +341,17 @@ a {
   height: calc(100dvh - var(--headerTotal) - var(--footerTotal));
   max-width: 980px;
   margin: 0 auto;
-  padding: 14px;
-  overflow: hidden;
+  padding: 12px 14px 10px;
+  display: flex;
+  align-items: flex-start;
+  overflow-x: hidden;
+  overflow-y: hidden;
   animation: pageEnter 0.32s ease-in-out both;
 }
 
 .hero {
   position: relative;
-  min-height: calc(100vh - var(--headerTotal) - var(--footerTotal) - 18px);
+  min-height: calc(100dvh - var(--headerTotal) - var(--footerTotal) - 18px);
   border-radius: 28px;
   overflow: hidden;
   display: flex;
@@ -362,25 +366,70 @@ a {
   box-shadow:
     0 24px 45px rgba(2, 7, 20, 0.72),
     inset 0 0 0 1px rgba(164, 214, 255, 0.15);
+  padding: 18px 18px 26px;
+}
+
+.heroIntroContent {
+  width: min(520px, 100%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  z-index: 1;
+}
+
+.heroMediaFrame {
+  width: 100%;
+  max-width: 340px;
+  aspect-ratio: 9 / 14;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 22px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(170, 213, 255, 0.22);
+  box-shadow:
+    inset 0 0 0 1px rgba(204, 230, 255, 0.04),
+    0 16px 32px rgba(2, 8, 22, 0.45);
+}
+
+.heroVideo {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center 40%;
+  transform: scale(1.08);
+  transform-origin: center center;
+}
+
+.heroWelcome {
+  margin: 6px 0 0;
+  font-family: "Orbitron", "Trebuchet MS", sans-serif;
+  font-size: clamp(24px, 4.5vw, 38px);
+  line-height: 1.12;
+  letter-spacing: 0.01em;
+  color: var(--ink-100);
+  text-shadow: 0 12px 26px rgba(5, 10, 24, 0.6);
+  animation: heroTextFade 0.4s ease;
+  text-align: center;
+}
+
+@keyframes heroTextFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .hero::before,
 .hero::after {
-  content: "";
-  position: absolute;
-  left: -20%;
-  right: -20%;
-  height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(151, 204, 255, 0.8), transparent);
-}
-
-.hero::before {
-  bottom: 20%;
-}
-
-.hero::after {
-  bottom: 10%;
+  content: none;
 }
 
 .heroContent {
@@ -440,22 +489,35 @@ a {
 
 .superHeitorSection {
   height: 100%;
-  min-height: 100%;
+  min-height: 0;
 }
 
 .superHeitorPage .superHeitorSection {
   margin: 0;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
 }
 
 .superHeitorCarousel {
   flex: 1;
+  height: 100%;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 10px;
+  padding: 2px 0 0;
   min-height: 0;
+}
+
+.superHeitorSubtitle {
+  margin: -2px 0 10px;
+  text-align: center;
+  color: var(--muted);
+  font-size: clamp(18px, 2.7vw, 22px);
+  line-height: 1.2;
 }
 
 .superHeitorArrow {
@@ -470,6 +532,8 @@ a {
   cursor: pointer;
   display: grid;
   place-items: center;
+  align-self: center;
+  z-index: 4;
   transition: filter 0.2s ease, transform 0.2s ease;
 }
 
@@ -478,41 +542,164 @@ a {
   transform: translateY(-1px);
 }
 
+.superHeitorArrow:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .superHeitorFrame {
-  height: 100%;
-  min-height: 320px;
-  max-height: calc(100vh - var(--headerTotal) - var(--footerTotal) - 132px);
+  height: clamp(300px, calc(100dvh - var(--headerTotal) - var(--footerTotal) - 210px), 540px);
+  min-height: 300px;
+  max-height: none;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 20px;
-  padding: 12px;
+  padding: 14px 12px;
   background: rgba(157, 199, 255, 0.08);
   border: 1px solid rgba(175, 211, 255, 0.24);
   box-shadow:
     inset 0 0 0 1px rgba(214, 235, 255, 0.08),
     0 12px 26px rgba(2, 8, 22, 0.44);
+  overflow: hidden;
+  perspective: 1300px;
+  transform-style: preserve-3d;
+  isolation: isolate;
+}
+
+.superHeitorTrack {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  justify-items: center;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  transition: transform 0.62s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.superHeitorCard {
+  width: 100%;
+  height: 100%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  transform-style: preserve-3d;
+  transition:
+    transform 0.62s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.62s ease-in-out,
+    filter 0.62s ease-in-out;
+  will-change: transform, opacity;
+}
+
+.superHeitorCard--active {
+  display: flex;
+  z-index: 3;
 }
 
 .superHeitorImage {
+  --superHeitorActiveOffsetY: 0px;
   width: auto;
   height: 100%;
   max-height: 100%;
   max-width: 100%;
   object-fit: contain;
+  object-position: center center;
   border-radius: 16px;
   box-shadow: 0 16px 30px rgba(2, 8, 22, 0.5);
-  animation: superHeitorFade 0.35s ease;
+  transform-origin: center;
+  transition:
+    transform 0.62s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.62s ease-in-out,
+    filter 0.62s ease-in-out;
 }
 
-@keyframes superHeitorFade {
+.superHeitorImage--active {
+  transform: translateY(var(--superHeitorActiveOffsetY)) scale(1.2) rotateY(0deg);
+  filter: brightness(1.1) contrast(1.1);
+}
+
+.superHeitorImage--side {
+  opacity: 0.5;
+  transform: translateZ(-52px) scale(0.76);
+  filter: brightness(0.82) saturate(0.82) blur(0.4px);
+}
+
+.superHeitorImage--next {
+  animation: superHeitorHeroNext 0.54s ease-in-out;
+}
+
+.superHeitorImage--prev {
+  animation: superHeitorHeroPrev 0.54s ease-in-out;
+}
+
+.superHeitorCard--prev .superHeitorImage {
+  transform: translateX(12px) rotateY(25deg) translateZ(-70px) scale(0.78);
+}
+
+.superHeitorCard--next .superHeitorImage {
+  transform: translateX(-12px) rotateY(-25deg) translateZ(-70px) scale(0.78);
+}
+
+.superHeitorTrack--next {
+  animation: superHeitorCylinderNext 0.5s ease-in-out;
+}
+
+.superHeitorTrack--prev {
+  animation: superHeitorCylinderPrev 0.5s ease-in-out;
+}
+
+.superHeitorEmpty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 18px;
+  text-align: center;
+}
+
+@keyframes superHeitorHeroNext {
   from {
-    opacity: 0.5;
-    transform: scale(0.985);
+    opacity: 0.32;
+    transform: translateY(var(--superHeitorActiveOffsetY)) translateX(46px)
+      rotateY(-30deg) translateZ(-24px) scale(0.92);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(var(--superHeitorActiveOffsetY)) translateX(0)
+      rotateY(0deg) translateZ(0) scale(1.2);
+  }
+}
+
+@keyframes superHeitorHeroPrev {
+  from {
+    opacity: 0.32;
+    transform: translateY(var(--superHeitorActiveOffsetY)) translateX(-46px)
+      rotateY(30deg) translateZ(-24px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(var(--superHeitorActiveOffsetY)) translateX(0)
+      rotateY(0deg) translateZ(0) scale(1.2);
+  }
+}
+
+@keyframes superHeitorCylinderNext {
+  from {
+    transform: rotateY(-12deg);
+  }
+  to {
+    transform: rotateY(0deg);
+  }
+}
+
+@keyframes superHeitorCylinderPrev {
+  from {
+    transform: rotateY(12deg);
+  }
+  to {
+    transform: rotateY(0deg);
   }
 }
 
@@ -612,6 +799,13 @@ a {
   box-shadow: 0 14px 28px rgba(3, 8, 20, 0.4);
 }
 
+.superHeitorImage {
+  background:
+    linear-gradient(135deg, rgba(56, 103, 186, 0.34), rgba(205, 229, 255, 0.14)),
+    radial-gradient(circle at 52% 32%, rgba(186, 220, 255, 0.36), transparent 52%),
+    linear-gradient(120deg, rgba(26, 50, 102, 0.7), rgba(12, 24, 49, 0.94));
+}
+
 .gameImage {
   background:
     linear-gradient(135deg, rgba(99, 149, 225, 0.3), rgba(204, 228, 255, 0.1)),
@@ -630,16 +824,23 @@ a {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  align-items: center;
+  text-align: center;
 }
 
 .ctaContent h3 {
   margin: 0;
   font-family: "Orbitron", "Trebuchet MS", sans-serif;
   font-size: 23px;
+  text-align: center;
+}
+
+.ctaContent p {
+  text-align: center;
 }
 
 .ctaContent .btn {
-  align-self: flex-start;
+  align-self: center;
 }
 
 .simplePage {
@@ -900,16 +1101,25 @@ a {
 
 @media (min-width: 760px) {
   .landingPage {
-    padding: 18px 20px 40px;
-    gap: 24px;
+    padding: 18px 20px;
+    gap: 18px;
   }
 
   .superHeitorPage {
-    padding: 18px 20px;
+    padding: 16px 20px 12px;
   }
 
   .hero {
-    min-height: 68vh;
+    min-height: calc(100dvh - var(--headerTotal) - var(--footerTotal) - 30px);
+  }
+
+  .heroIntroContent {
+    width: min(620px, 100%);
+    gap: 18px;
+  }
+
+  .heroMediaFrame {
+    max-width: 380px;
   }
 
   .infoGrid {
@@ -927,6 +1137,82 @@ a {
   .superHeitorArrow {
     width: 52px;
     height: 52px;
+  }
+
+  .superHeitorTrack {
+    grid-template-columns: 0.9fr 1.2fr 0.9fr;
+    gap: 12px;
+  }
+
+  .superHeitorCard--next {
+    display: flex;
+  }
+
+  .superHeitorCard--prev {
+    display: flex;
+  }
+
+  .superHeitorFrame {
+    height: clamp(380px, calc(100dvh - var(--headerTotal) - var(--footerTotal) - 220px), 620px);
+    min-height: 380px;
+    padding: 16px 12px;
+  }
+
+  .superHeitorImage {
+    max-width: min(420px, 100%);
+  }
+
+  .superHeitorImage--active {
+    transform: scale(1.2) rotateY(0deg);
+  }
+
+  .superHeitorImage--side {
+    opacity: 0.5;
+    transform: translateZ(-60px) scale(0.76);
+  }
+
+  .superHeitorCard--prev .superHeitorImage,
+  .superHeitorCard--next .superHeitorImage {
+    transform: translateX(0) rotateY(0deg) translateZ(-60px) scale(0.76);
+  }
+
+  .superHeitorCard--prev .superHeitorImage {
+    transform: translateX(10px) rotateY(24deg) translateZ(-66px) scale(0.77);
+  }
+
+  .superHeitorCard--next .superHeitorImage {
+    transform: translateX(-10px) rotateY(-24deg) translateZ(-66px) scale(0.77);
+  }
+}
+
+@media (min-width: 1024px) {
+  .superHeitorTrack {
+    grid-template-columns: 0.86fr 1.24fr 0.86fr;
+    gap: 12px;
+  }
+
+  .superHeitorFrame {
+    height: clamp(400px, calc(100dvh - var(--headerTotal) - var(--footerTotal) - 255px), 640px);
+    min-height: 400px;
+    padding: 18px 14px 22px;
+  }
+
+  .superHeitorImage {
+    max-width: min(440px, 100%);
+    max-height: 94%;
+  }
+
+  .superHeitorImage--active {
+    --superHeitorActiveOffsetY: -28px;
+    transform: translateY(var(--superHeitorActiveOffsetY)) scale(1.18) rotateY(0deg);
+  }
+
+  .superHeitorCard--prev .superHeitorImage {
+    transform: translateX(12px) rotateY(25deg) translateZ(-62px) scale(0.8);
+  }
+
+  .superHeitorCard--next .superHeitorImage {
+    transform: translateX(-12px) rotateY(-25deg) translateZ(-62px) scale(0.8);
   }
 }
 
@@ -993,6 +1279,94 @@ a {
   }
 
   .superHeitorFrame {
-    max-height: calc(100vh - var(--headerTotal) - var(--footerTotal) - 180px);
+    height: clamp(300px, calc(100dvh - var(--headerTotal) - var(--footerTotal) - 208px), 520px);
+    min-height: 300px;
+    padding: 12px 9px;
+  }
+
+  .superHeitorImage {
+    max-width: min(500px, 100%);
+  }
+
+  .superHeitorImage--active {
+    transform: scale(1.15) rotateY(0deg);
+  }
+}
+
+@media (max-width: 759px) {
+  .landingPage {
+    padding: 10px 12px calc(10px + 22px);
+    gap: 10px;
+  }
+
+  .hero {
+    min-height: calc(100dvh - var(--headerTotal) - var(--footerTotal) - 44px);
+    padding: 12px 12px 20px;
+  }
+
+  .heroIntroContent {
+    justify-content: flex-start;
+    padding-top: 8px;
+    gap: 16px;
+  }
+
+  .heroMediaFrame {
+    max-width: min(66vw, 252px);
+  }
+
+  .heroVideo {
+    object-position: center 34%;
+    transform: scale(1.12);
+  }
+
+  .heroWelcome {
+    font-size: clamp(18px, 6vw, 34px);
+    line-height: 1.1;
+    margin-top: 8px;
+  }
+
+  .superHeitorCard--active .superHeitorImage {
+    height: 100%;
+    max-height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    object-position: center center;
+    transform-origin: center center;
+    margin: 0 auto;
+  }
+
+  .superHeitorImage--active {
+    transform: translateX(0) scale(1.39) rotateY(0deg);
+  }
+
+  .superHeitorImage--next {
+    animation: superHeitorHeroNextMobile 0.54s ease-in-out;
+  }
+
+  .superHeitorImage--prev {
+    animation: superHeitorHeroPrevMobile 0.54s ease-in-out;
+  }
+}
+
+@keyframes superHeitorHeroNextMobile {
+  from {
+    opacity: 0.32;
+    transform: translateX(38px) rotateY(-30deg) translateZ(-24px) scale(1.39);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) rotateY(0deg) translateZ(0) scale(1.39);
+  }
+}
+
+@keyframes superHeitorHeroPrevMobile {
+  from {
+    opacity: 0.32;
+    transform: translateX(-54px) rotateY(30deg) translateZ(-24px) scale(1.39);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) rotateY(0deg) translateZ(0) scale(1.39);
   }
 }
