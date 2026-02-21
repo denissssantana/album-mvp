@@ -11,25 +11,25 @@ import superHeitor9 from "../assets/super-heitor/super-heitor-9.png";
 import superHeitor10 from "../assets/super-heitor/super-heitor-10.png";
 import superHeitor11 from "../assets/super-heitor/super-heitor-11.png";
 
-const superHeitorImages = [
-  superHeitor1,
-  superHeitor2,
-  superHeitor3,
-  superHeitor4,
-  superHeitor5,
-  superHeitor6,
-  superHeitor7,
-  superHeitor8,
-  superHeitor9,
-  superHeitor10,
-  superHeitor11,
+const superHeitorHeroes = [
+  { id: "heitor-1", name: "HEITOR", image: superHeitor1 },
+  { id: "heitor-2", name: "HEITOR", image: superHeitor2 },
+  { id: "heitor-3", name: "HEITOR", image: superHeitor3 },
+  { id: "heitor-4", name: "HEITOR", image: superHeitor4 },
+  { id: "heitor-5", name: "HEITOR", image: superHeitor5 },
+  { id: "heitor-6", name: "HEITOR", image: superHeitor6 },
+  { id: "heitor-7", name: "HEITOR", image: superHeitor7 },
+  { id: "heitor-8", name: "HEITOR", image: superHeitor8 },
+  { id: "heitor-9", name: "HEITOR", image: superHeitor9 },
+  { id: "heitor-10", name: "HEITOR", image: superHeitor10 },
+  { id: "heitor-11", name: "HEITOR", image: superHeitor11 },
 ];
 
 export default function SuperHeitor() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [slideDirection, setSlideDirection] = useState("next");
 
-  const totalSlides = superHeitorImages.length;
+  const totalSlides = superHeitorHeroes.length;
   const hasSlides = totalSlides > 0;
   const getWrappedIndex = (index) => {
     if (totalSlides === 0) return 0;
@@ -40,7 +40,7 @@ export default function SuperHeitor() {
     if (!hasSlides) return;
     setSlideDirection("prev");
     setActiveSlide((current) =>
-      current === 0 ? superHeitorImages.length - 1 : current - 1,
+      current === 0 ? superHeitorHeroes.length - 1 : current - 1,
     );
   };
 
@@ -48,12 +48,15 @@ export default function SuperHeitor() {
     if (!hasSlides) return;
     setSlideDirection("next");
     setActiveSlide((current) =>
-      current === superHeitorImages.length - 1 ? 0 : current + 1,
+      current === superHeitorHeroes.length - 1 ? 0 : current + 1,
     );
   };
 
   const prevSlideIndex = getWrappedIndex(activeSlide - 1);
   const nextSlideIndex = getWrappedIndex(activeSlide + 1);
+  const activeHero = hasSlides ? superHeitorHeroes[activeSlide] : null;
+  const prevHero = hasSlides ? superHeitorHeroes[prevSlideIndex] : null;
+  const nextHero = hasSlides ? superHeitorHeroes[nextSlideIndex] : null;
 
   return (
     <div className="superHeitorPage">
@@ -73,37 +76,47 @@ export default function SuperHeitor() {
             ❮
           </button>
 
-          <div className="superHeitorFrame">
+          <div className="superHeitorCardMid">
+            <div className="superHeitorFrame">
+              {hasSlides ? (
+                <div className={`superHeitorTrack superHeitorTrack--${slideDirection}`}>
+                  <div className="superHeitorCard superHeitorCard--side superHeitorCard--prev">
+                    <img
+                      className="superHeitorImage superHeitorImage--side"
+                      src={prevHero.image}
+                      alt={`Super Heitor ${prevSlideIndex + 1}`}
+                    />
+                  </div>
+
+                  <div className="superHeitorCard superHeitorCard--active">
+                    <img
+                      key={`${activeSlide}-${slideDirection}`}
+                      className={`superHeitorImage superHeitorImage--active superHeitorImage--${slideDirection}`}
+                      src={activeHero.image}
+                      alt={`Super Heitor ${activeSlide + 1}`}
+                    />
+                  </div>
+
+                  <div className="superHeitorCard superHeitorCard--side superHeitorCard--next">
+                    <img
+                      className="superHeitorImage superHeitorImage--side"
+                      src={nextHero.image}
+                      alt={`Super Heitor ${nextSlideIndex + 1}`}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <p className="superHeitorEmpty">Nenhuma imagem disponivel.</p>
+              )}
+            </div>
             {hasSlides ? (
-              <div className={`superHeitorTrack superHeitorTrack--${slideDirection}`}>
-                <div className="superHeitorCard superHeitorCard--side superHeitorCard--prev">
-                  <img
-                    className="superHeitorImage superHeitorImage--side"
-                    src={superHeitorImages[prevSlideIndex]}
-                    alt={`Super Heitor ${prevSlideIndex + 1}`}
-                  />
-                </div>
-
-                <div className="superHeitorCard superHeitorCard--active">
-                  <img
-                    key={`${activeSlide}-${slideDirection}`}
-                    className={`superHeitorImage superHeitorImage--active superHeitorImage--${slideDirection}`}
-                    src={superHeitorImages[activeSlide]}
-                    alt={`Super Heitor ${activeSlide + 1}`}
-                  />
-                </div>
-
-                <div className="superHeitorCard superHeitorCard--side superHeitorCard--next">
-                  <img
-                    className="superHeitorImage superHeitorImage--side"
-                    src={superHeitorImages[nextSlideIndex]}
-                    alt={`Super Heitor ${nextSlideIndex + 1}`}
-                  />
-                </div>
+              <div
+                key={`${activeHero.id}-${slideDirection}`}
+                className={`superHeitorNameCard superHeitorNameCard--${slideDirection}`}
+              >
+                <span className="superHeitorName">{activeHero.name}</span>
               </div>
-            ) : (
-              <p className="superHeitorEmpty">Nenhuma imagem disponivel.</p>
-            )}
+            ) : null}
           </div>
 
           <button

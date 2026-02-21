@@ -5,6 +5,7 @@ import Landing from "./pages/Landing";
 import Album from "./pages/Album";
 import JogoMemoria from "./pages/JogoMemoria";
 import SuperHeitor from "./pages/SuperHeitor";
+import Contatos from "./pages/Contatos";
 import "./App.css";
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
             <Route path="/super-heitor" element={<SuperHeitor />} />
             <Route path="/album" element={<Album />} />
             <Route path="/jogo" element={<JogoMemoria />} />
+            <Route path="/contatos" element={<Contatos />} />
           </Routes>
         </main>
         <Footer />

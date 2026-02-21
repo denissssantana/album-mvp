@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import logoHeitor from "../assets/images/1aninho-meio.jpeg";
 
 const navItems = [
   { to: "/", label: "Início" },
   { to: "/super-heitor", label: "Super Heitor" },
   { to: "/jogo", label: "Jogo da Memória" },
   { to: "/album", label: "Álbum Virtual" },
+  { to: "/contatos", label: "Contatos" },
 ];
 
 export default function Header() {
@@ -19,10 +21,9 @@ export default function Header() {
   return (
     <header className="siteHeader">
       <div className="brand">
-        <span className="brandMark" aria-hidden="true" />
+        <img className="brandMark" src={logoHeitor} alt="Logo do Heitor" />
         <div className="brandText">
           <span className="brandTitle">1 Aninho do Heitor</span>
-          <span className="brandSubtitle">Álbum virtual</span>
         </div>
       </div>
 

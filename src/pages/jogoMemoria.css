@@ -1,6 +1,6 @@
 .memory-page {
   height: calc(100vh - var(--headerTotal) - var(--footerTotal));
-  height: calc(100dvh - var(--headerTotal) - var(--footerTotal));
+  height: calc((var(--vh) * 100) - var(--headerTotal) - var(--footerTotal));
   display: flex;
   flex-direction: column;
   gap: 12px;

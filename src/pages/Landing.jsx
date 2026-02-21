@@ -1,5 +1,8 @@
 import { Link } from "react-router-dom";
 import introVideo from "../assets/video/intro.mp4";
+import superHPreview from "../assets/images/super-h.png";
+import memoPreview from "../assets/images/memo.png";
+import contatoPreview from "../assets/images/contato.png";
 
 export default function Landing() {
   return (
@@ -25,11 +28,13 @@ export default function Landing() {
         <h2>App do Heitor</h2>
         <div className="appsGrid">
           <article className="appCard">
-            <div
-              className="sectionImage superHeitorImage"
-              role="img"
-              aria-label="Preview do Super Heitor"
-            />
+            <div className="sectionImage superHeitorImage">
+              <img
+                className="superHeitorPreview"
+                src={superHPreview}
+                alt="Preview do Super Heitor"
+              />
+            </div>
             <div className="ctaContent">
               <h3>Super Heitor</h3>
               <p>Veja as várias versões do Super Heitor</p>
@@ -40,11 +45,13 @@ export default function Landing() {
           </article>
 
           <article className="appCard">
-            <div
-              className="sectionImage gameImage"
-              role="img"
-              aria-label="Preview do jogo da memoria"
-            />
+            <div className="sectionImage superHeitorImage">
+              <img
+                className="appCardPreview"
+                src={memoPreview}
+                alt="Preview do jogo da memoria"
+              />
+            </div>
             <div className="ctaContent">
               <h3>Jogo da Memória</h3>
               <p>Ative a brincadeira com o tema de herois.</p>
@@ -65,6 +72,26 @@ export default function Landing() {
               <p>Relembre os momentos especiais da festa</p>
               <Link className="btn btnPrimary" to="/album">
                 Abrir Álbum Virtual
+              </Link>
+            </div>
+          </article>
+
+          <article className="appCard">
+            <div className="sectionImage superHeitorImage">
+              <img
+                className="appCardPreview"
+                src={contatoPreview}
+                alt="Preview do contato"
+              />
+            </div>
+            <div className="ctaContent">
+              <h3>Contato</h3>
+              <p>
+                Se você quer um app como esse para sua festa, entre em contato
+                conosco.
+              </p>
+              <Link className="btn btnPrimary" to="/contatos">
+                Abrir Contato
               </Link>
             </div>
           </article>
