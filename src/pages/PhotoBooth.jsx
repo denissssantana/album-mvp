@@ -4,6 +4,10 @@ import frame2 from "../assets/frames/mold-v-azul.png";
 import frame3 from "../assets/frames/mold-v-laranja.png";
 import "./PhotoBooth.css";
 
+const FRAME_ART_SIZE = { w: 720, h: 1280 };
+const FRAME_PHOTO_MASK = { x: 168, y: 334, w: 368, h: 500, r: 0 };
+const INITIAL_PHOTO_SCALE = 0.94;
+
 function loadImageElement(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -14,12 +18,12 @@ function loadImageElement(src) {
   });
 }
 
-function canvasToJpegBlob(canvas, quality = 0.9) {
+function canvasToJpegBlob(canvas, quality = 0.92) {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
         if (blob) resolve(blob);
-        else reject(new Error("Falha ao gerar JPEG"));
+        else reject(new Error("Falha ao gerar imagem"));
       },
       "image/jpeg",
       quality
@@ -36,6 +40,72 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y + h, x, y, rr);
   ctx.arcTo(x, y, x + w, y, rr);
   ctx.closePath();
+}
+
+function getNormalizedRotation(rotation) {
+  return ((rotation % 360) + 360) % 360;
+}
+
+function getPhotoDrawMetrics(photoMeta, rotation, targetW, targetH) {
+  const iw = photoMeta?.width || 0;
+  const ih = photoMeta?.height || 0;
+  if (!iw || !ih || !targetW || !targetH) return { drawW: targetW, drawH: targetH };
+
+  const normalizedRotation = getNormalizedRotation(rotation);
+  const rotates90 = normalizedRotation === 90 || normalizedRotation === 270;
+  const effectiveW = rotates90 ? ih : iw;
+  const effectiveH = rotates90 ? iw : ih;
+  const baseCover = Math.max(targetW / effectiveW, targetH / effectiveH);
+
+  return {
+    drawW: iw * baseCover,
+    drawH: ih * baseCover,
+  };
+}
+
+function getOpaqueBoundsFromImage(img) {
+  const width = img.naturalWidth || img.width || 0;
+  const height = img.naturalHeight || img.height || 0;
+  if (!width || !height) {
+    return { x: 0, y: 0, w: FRAME_ART_SIZE.w, h: FRAME_ART_SIZE.h };
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return { x: 0, y: 0, w: width, h: height };
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.drawImage(img, 0, 0, width, height);
+  const { data } = ctx.getImageData(0, 0, width, height);
+
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const alpha = data[(y * width + x) * 4 + 3];
+      if (alpha <= 0) continue;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    return { x: 0, y: 0, w: width, h: height };
+  }
+
+  return {
+    x: minX,
+    y: minY,
+    w: maxX - minX + 1,
+    h: maxY - minY + 1,
+  };
 }
 
 function getInitialSaveCounter() {
@@ -58,10 +128,12 @@ export default function PhotoBooth() {
   const [step, setStep] = useState("captura");
   const [status, setStatus] = useState("idle");
   const [isDragging, setIsDragging] = useState(false);
+  const [previewMaskSize, setPreviewMaskSize] = useState({ width: 0, height: 0 });
   const fileInputRef = useRef(null);
   const activePhotoUrlRef = useRef(null);
   const previewViewportRef = useRef(null);
   const saveSequenceRef = useRef(getInitialSaveCounter());
+  const frameMetricsCacheRef = useRef(new Map());
   const pointersRef = useRef(new Map());
   const pinchRef = useRef({ active: false, startDistance: 0, startScale: 1 });
   const dragRef = useRef({
@@ -74,9 +146,9 @@ export default function PhotoBooth() {
   });
 
   const frameItems = [
-    { id: "frame-1", label: "Moldura 1", src: frame1, windowBox: { x: 28, y: 28, w: 244, h: 344, r: 18 } },
-    { id: "frame-2", label: "Moldura 2", src: frame2, windowBox: { x: 34, y: 34, w: 232, h: 332, r: 16 } },
-    { id: "frame-3", label: "Moldura 3", src: frame3, windowBox: { x: 24, y: 24, w: 252, h: 352, r: 20 } },
+    { id: "frame-1", label: "Moldura 1", src: frame1, frameBox: FRAME_ART_SIZE, photoBox: FRAME_PHOTO_MASK },
+    { id: "frame-2", label: "Moldura 2", src: frame2, frameBox: FRAME_ART_SIZE, photoBox: FRAME_PHOTO_MASK },
+    { id: "frame-3", label: "Moldura 3", src: frame3, frameBox: FRAME_ART_SIZE, photoBox: FRAME_PHOTO_MASK },
   ];
   const activeFrame =
     frameItems.find((frame) => frame.id === selectedFrame) || frameItems[0];
@@ -84,6 +156,7 @@ export default function PhotoBooth() {
     0,
     frameItems.findIndex((frame) => frame.id === activeFrame.id)
   );
+  const [frameMetricsById, setFrameMetricsById] = useState({});
 
   useEffect(() => {
     return () => {
@@ -93,6 +166,66 @@ export default function PhotoBooth() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    const el = previewViewportRef.current;
+    if (!el) return;
+
+    const syncSize = () => {
+      setPreviewMaskSize({
+        width: el.clientWidth || 0,
+        height: el.clientHeight || 0,
+      });
+    };
+
+    syncSize();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(() => {
+        syncSize();
+      });
+      observer.observe(el);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener("resize", syncSize);
+    return () => window.removeEventListener("resize", syncSize);
+  }, [step, photo, selectedFrame]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function ensureFrameMetrics(frame) {
+      if (!frame) return;
+      if (frameMetricsCacheRef.current.has(frame.id)) return;
+      try {
+        const frameImg = await loadImageElement(frame.src);
+        if (cancelled) return;
+        const frameBox = {
+          w: frameImg.naturalWidth || frameImg.width || frame.frameBox?.w || FRAME_ART_SIZE.w,
+          h: frameImg.naturalHeight || frameImg.height || frame.frameBox?.h || FRAME_ART_SIZE.h,
+        };
+        const outerBox = getOpaqueBoundsFromImage(frameImg);
+        const metrics = { frameBox, outerBox };
+        frameMetricsCacheRef.current.set(frame.id, metrics);
+        setFrameMetricsById((prev) => (prev[frame.id] ? prev : { ...prev, [frame.id]: metrics }));
+      } catch {
+        const safeFrameBox = frame.frameBox || FRAME_ART_SIZE;
+        const metrics = {
+          frameBox: safeFrameBox,
+          outerBox: { x: 0, y: 0, w: safeFrameBox.w, h: safeFrameBox.h },
+        };
+        frameMetricsCacheRef.current.set(frame.id, metrics);
+        setFrameMetricsById((prev) => (prev[frame.id] ? prev : { ...prev, [frame.id]: metrics }));
+      }
+    }
+
+    ensureFrameMetrics(activeFrame);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeFrame.id, activeFrame.src]);
 
   function openCameraCapture() {
     fileInputRef.current?.click();
@@ -104,14 +237,22 @@ export default function PhotoBooth() {
     openCameraCapture();
   }
 
-  async function detectOrientation(fileUrl) {
+  async function detectPhotoMeta(fileUrl) {
     try {
       const img = await loadImageElement(fileUrl);
       const w = img.naturalWidth || img.width || 0;
       const h = img.naturalHeight || img.height || 0;
-      return w > h ? "landscape" : "portrait";
+      return {
+        width: w,
+        height: h,
+        orientation: w > h ? "landscape" : "portrait",
+      };
     } catch {
-      return "portrait";
+      return {
+        width: 0,
+        height: 0,
+        orientation: "portrait",
+      };
     }
   }
 
@@ -127,12 +268,12 @@ export default function PhotoBooth() {
     }
 
     const previewUrl = URL.createObjectURL(file);
-    const orientation = await detectOrientation(previewUrl);
+    const meta = await detectPhotoMeta(previewUrl);
     activePhotoUrlRef.current = previewUrl;
-    setPhoto({ file, previewUrl, orientation });
-    setScale(1);
+    setPhoto({ file, previewUrl, orientation: meta.orientation, width: meta.width, height: meta.height });
+    setScale(INITIAL_PHOTO_SCALE);
     setPosition({ x: 0, y: 0 });
-    setRotation(orientation === "landscape" ? 90 : 0);
+    setRotation(meta.orientation === "landscape" ? 90 : 0);
     setSelectedFrame(frameItems[0].id);
     setStep("moldura");
     setStatus("editing");
@@ -230,7 +371,7 @@ export default function PhotoBooth() {
     if (!photo) return null;
 
     const viewportW = previewViewportRef.current?.clientWidth || 300;
-    const viewportH = previewViewportRef.current?.clientHeight || 450;
+    const viewportH = previewViewportRef.current?.clientHeight || 400;
     dragRef.current.active = false;
     dragRef.current.pointerId = null;
     setIsDragging(false);
@@ -243,10 +384,20 @@ export default function PhotoBooth() {
         loadImageElement(activeFrame.src),
       ]);
 
-      const fw = frameImg.naturalWidth || frameImg.width || 300;
-      const fh = frameImg.naturalHeight || frameImg.height || 400;
-      const outH = 1600;
-      const outW = Math.max(1, Math.round((fw / fh) * outH));
+      const frameBox = {
+        w: frameImg.naturalWidth || frameImg.width || activeFrame.frameBox?.w || FRAME_ART_SIZE.w,
+        h: frameImg.naturalHeight || frameImg.height || activeFrame.frameBox?.h || FRAME_ART_SIZE.h,
+      };
+      const cachedMetrics = frameMetricsCacheRef.current.get(activeFrame.id);
+      const outerBox = cachedMetrics?.outerBox || getOpaqueBoundsFromImage(frameImg);
+      if (!cachedMetrics) {
+        const metrics = { frameBox, outerBox };
+        frameMetricsCacheRef.current.set(activeFrame.id, metrics);
+        setFrameMetricsById((prev) => ({ ...prev, [activeFrame.id]: metrics }));
+      }
+
+      const outW = outerBox.w;
+      const outH = outerBox.h;
 
       canvas = document.createElement("canvas");
       canvas.width = outW;
@@ -255,30 +406,34 @@ export default function PhotoBooth() {
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Canvas indisponivel");
 
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, outW, outH);
+      ctx.clearRect(0, 0, outW, outH);
 
-      const wb = activeFrame.windowBox || { x: 24, y: 24, w: 252, h: 352, r: 20 };
-      const clipX = Math.round((wb.x / 300) * outW);
-      const clipY = Math.round((wb.y / 400) * outH);
-      const clipW = Math.round((wb.w / 300) * outW);
-      const clipH = Math.round((wb.h / 400) * outH);
-      const clipR = Math.round((wb.r / 300) * outW);
+      const pb = activeFrame.photoBox || FRAME_PHOTO_MASK;
+      const clipX = Math.round(pb.x - outerBox.x);
+      const clipY = Math.round(pb.y - outerBox.y);
+      const clipW = Math.round(pb.w);
+      const clipH = Math.round(pb.h);
+      const clipR = Math.round(pb.r);
 
       ctx.save();
-      roundRectPath(ctx, clipX, clipY, clipW, clipH, clipR);
-      ctx.clip();
+      if (clipR > 0) {
+        roundRectPath(ctx, clipX, clipY, clipW, clipH, clipR);
+        ctx.clip();
+      } else {
+        ctx.beginPath();
+        ctx.rect(clipX, clipY, clipW, clipH);
+        ctx.clip();
+      }
 
-      const iw = photoImg.naturalWidth || photoImg.width;
-      const ih = photoImg.naturalHeight || photoImg.height;
-      const rotationTurns = Math.abs(((rotation % 360) + 360) % 360);
-      const rotates90 = rotationTurns === 90 || rotationTurns === 270;
-      const effectiveW = rotates90 ? ih : iw;
-      const effectiveH = rotates90 ? iw : ih;
-      const baseCover = Math.max(clipW / effectiveW, clipH / effectiveH);
-
-      const drawW = iw * baseCover;
-      const drawH = ih * baseCover;
+      const { drawW, drawH } = getPhotoDrawMetrics(
+        {
+          width: photo.width || photoImg.naturalWidth || photoImg.width,
+          height: photo.height || photoImg.naturalHeight || photoImg.height,
+        },
+        rotation,
+        clipW,
+        clipH
+      );
       const tx = (position.x / Math.max(1, viewportW)) * clipW;
       const ty = (position.y / Math.max(1, viewportH)) * clipH;
       const centerX = clipX + clipW / 2 + tx;
@@ -290,9 +445,9 @@ export default function PhotoBooth() {
       ctx.drawImage(photoImg, -drawW / 2, -drawH / 2, drawW, drawH);
       ctx.restore();
 
-      ctx.drawImage(frameImg, 0, 0, outW, outH);
+      ctx.drawImage(frameImg, outerBox.x, outerBox.y, outerBox.w, outerBox.h, 0, 0, outW, outH);
 
-      const blob = await canvasToJpegBlob(canvas, 0.9);
+      const blob = await canvasToJpegBlob(canvas);
       return blob;
     } catch (err) {
       throw err;
@@ -303,6 +458,35 @@ export default function PhotoBooth() {
       }
     }
   }
+
+  const frameMetrics = frameMetricsById[activeFrame.id];
+  const frameBase = frameMetrics?.frameBox || activeFrame.frameBox || FRAME_ART_SIZE;
+  const outerBox = frameMetrics?.outerBox || { x: 0, y: 0, w: frameBase.w, h: frameBase.h };
+  const photoBox = activeFrame.photoBox || FRAME_PHOTO_MASK;
+  const framePreviewStyle = {
+    "--photo-mask-left": `${((photoBox.x - outerBox.x) / outerBox.w) * 100}%`,
+    "--photo-mask-top": `${((photoBox.y - outerBox.y) / outerBox.h) * 100}%`,
+    "--photo-mask-width": `${(photoBox.w / outerBox.w) * 100}%`,
+    "--photo-mask-height": `${(photoBox.h / outerBox.h) * 100}%`,
+    "--photo-mask-radius": `${(photoBox.r / outerBox.w) * 100}%`,
+  };
+  const frameOverlayImageStyle = {
+    width: `${(frameBase.w / outerBox.w) * 100}%`,
+    height: `${(frameBase.h / outerBox.h) * 100}%`,
+    left: `${-(outerBox.x / outerBox.w) * 100}%`,
+    top: `${-(outerBox.y / outerBox.h) * 100}%`,
+  };
+  const previewDraw = getPhotoDrawMetrics(
+    photo,
+    rotation,
+    previewMaskSize.width || 1,
+    previewMaskSize.height || 1
+  );
+  const photoPreviewStyle = {
+    width: `${Math.max(1, Math.round(previewDraw.drawW))}px`,
+    height: `${Math.max(1, Math.round(previewDraw.drawH))}px`,
+    transform: `translate(-50%, -50%) translate(${position.x}px, ${position.y}px) rotate(${rotation}deg) scale(${scale})`,
+  };
 
   async function handleSendToHeitor() {
     if (!photo || status === "exporting") return;
@@ -437,24 +621,32 @@ export default function PhotoBooth() {
                   className={`photoBooth__photoViewport photoBooth__singlePreview${
                     isDragging ? " isDragging" : ""
                   }`}
-                  ref={previewViewportRef}
-                  onPointerDown={onPhotoPointerDown}
-                  onPointerMove={onPhotoPointerMove}
-                  onPointerUp={onPhotoPointerEnd}
-                  onPointerCancel={onPhotoPointerEnd}
+                  style={framePreviewStyle}
                 >
-                  <img
-                    className="photoBooth__editingPhotoImage"
-                    src={photo.previewUrl}
-                    alt="Foto capturada"
-                    draggable={false}
-                    style={{
-                      transform: `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg) scale(${scale})`,
-                    }}
-                  />
+                  <div
+                    className={`photo-mask${isDragging ? " isDragging" : ""}`}
+                    ref={previewViewportRef}
+                    onPointerDown={onPhotoPointerDown}
+                    onPointerMove={onPhotoPointerMove}
+                    onPointerUp={onPhotoPointerEnd}
+                    onPointerCancel={onPhotoPointerEnd}
+                  >
+                    <img
+                      className="photoBooth__editingPhotoImage"
+                      src={photo.previewUrl}
+                      alt="Foto capturada"
+                      draggable={false}
+                      style={photoPreviewStyle}
+                    />
+                  </div>
 
                   <div className="photoBooth__frameOverlay" aria-hidden="true">
-                    <img className="photoBooth__frameOverlayImage" src={activeFrame.src} alt="" />
+                    <img
+                      className="photoBooth__frameOverlayImage"
+                      src={activeFrame.src}
+                      alt=""
+                      style={frameOverlayImageStyle}
+                    />
                   </div>
                 </div>
 

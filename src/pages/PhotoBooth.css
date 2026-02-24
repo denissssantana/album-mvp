@@ -21,7 +21,7 @@
 
 .photoBooth__containerRoot--editing {
   overflow: hidden;
-  padding-bottom: calc(var(--barH) + 22px);
+  padding-bottom: calc(var(--barH) + 12px);
 }
 
 .photoBoothPage .albumPageTitle {
@@ -32,8 +32,8 @@
 .photoBooth__topCopy {
   display: grid;
   justify-items: center;
-  gap: 8px;
-  padding-top: 2px;
+  gap: 6px;
+  padding-top: 0;
   flex: 0 0 auto;
 }
 
@@ -186,12 +186,12 @@
   align-items: center;
   flex: 1;
   min-height: 0;
-  padding-bottom: 14px;
+  padding-bottom: 6px;
   overflow: hidden;
 }
 
 .photoBooth__containerRoot--editing .photoBooth__stageMain {
-  transform: translateY(-24px);
+  transform: translateY(-16px);
 }
 
 .photoBooth__headline {
@@ -206,19 +206,19 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   padding: 0;
   min-height: 0;
 }
 
 .photoBooth__singlePreview {
-  width: min(100%, 430px);
-  aspect-ratio: 5 / 8;
-  min-height: 320px;
+  width: min(100%, 520px);
+  aspect-ratio: 9 / 16;
+  min-height: 360px;
   max-height: clamp(
-    280px,
-    calc((var(--vh) * 100) - var(--headerTotal) - var(--footerTotal) - var(--barH) - 220px),
-    50svh
+    360px,
+    calc((var(--vh) * 100) - var(--headerTotal) - var(--footerTotal) - var(--barH) - 146px),
+    66svh
   );
   border-radius: 14px;
   border: 1px solid rgba(186, 222, 255, 0.22);
@@ -230,16 +230,47 @@
   width: 100%;
   height: 100%;
   border-radius: 10px;
-  overflow: hidden;
-  touch-action: none;
-  cursor: grab;
+  overflow: visible;
   position: relative;
   z-index: 1;
-  display: grid;
-  place-items: center;
+  background:
+    linear-gradient(180deg, rgba(20, 35, 66, 0.92), rgba(14, 22, 42, 0.94)),
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.02),
+      rgba(255, 255, 255, 0.02) 8px,
+      rgba(255, 255, 255, 0.01) 8px,
+      rgba(255, 255, 255, 0.01) 16px
+    );
 }
 
 .photoBooth__photoViewport.isDragging {
+  cursor: default;
+}
+
+.photo-mask {
+  position: absolute;
+  left: var(--photo-mask-left, 23.333%);
+  top: var(--photo-mask-top, 26.09375%);
+  width: var(--photo-mask-width, 51.111%);
+  height: var(--photo-mask-height, 39.0625%);
+  border-radius: var(--photo-mask-radius, 0%);
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(20, 35, 66, 0.92), rgba(14, 22, 42, 0.94)),
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.02),
+      rgba(255, 255, 255, 0.02) 8px,
+      rgba(255, 255, 255, 0.01) 8px,
+      rgba(255, 255, 255, 0.01) 16px
+    );
+}
+
+.photo-mask.isDragging {
   cursor: grabbing;
 }
 
@@ -262,11 +293,12 @@
 }
 
 .photoBooth__editingPhotoImage {
-  width: 92%;
-  height: 92%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   display: block;
-  object-fit: cover;
-  border-radius: 14px;
+  max-width: none;
+  max-height: none;
   background: #fff;
   will-change: transform;
   transform-origin: center center;
@@ -284,24 +316,22 @@
 }
 
 .photoBooth__frameOverlayImage {
-  width: 100%;
-  height: 100%;
   display: block;
-  object-fit: contain;
+  max-width: none;
+  max-height: none;
   filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.18));
-  transform: scale(1.97);
-  transform-origin: center;
   position: absolute;
-  inset: 0;
 }
 
 .photoBooth__frameArrow {
   z-index: 4;
   flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
 }
 
 .photoBooth__editingBar {
-  bottom: calc(var(--footerTotal) + 24px);
+  bottom: calc(var(--footerTotal) + 16px);
 }
 
 .photoBooth__frameCarousel {
@@ -427,17 +457,22 @@
   }
 
   .photoBooth__singlePreview {
-    width: min(100%, 430px);
-    min-height: 300px;
+    width: min(100%, 480px);
+    min-height: 340px;
     max-height: clamp(
-      260px,
-      calc((var(--vh) * 100) - var(--headerTotal) - var(--footerTotal) - var(--barH) - 222px),
-      42svh
+      320px,
+      calc((var(--vh) * 100) - var(--headerTotal) - var(--footerTotal) - var(--barH) - 150px),
+      56svh
     );
   }
 
   .photoBooth__stageWrap {
     gap: 6px;
+  }
+
+  .photoBooth__frameArrow {
+    width: 40px;
+    height: 40px;
   }
 
   .photoBooth__idleCenter {

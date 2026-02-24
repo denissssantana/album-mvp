@@ -1,20 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import ironFooter from "../assets/images/iron-2-s-bg.png";
-import superFooter from "../assets/images/sup-2-s-bg.png";
-import thorFooter from "../assets/images/thr-2-s-bg.png";
-import wolFooter from "../assets/images/wol-2-s-bg.png";
 
 const EXIT_ANIMATION_MS = 350;
 
 export default function Footer() {
   const location = useLocation();
   const isHome = location.pathname === "/";
-  const isSuperHeitor = location.pathname === "/super-heitor";
-  const isJogoMemoria = location.pathname === "/jogo";
-  const isAlbum = location.pathname === "/album";
-  const isPhotoBooth = location.pathname === "/album-de-fotos";
-  const isContatos = location.pathname === "/contatos";
   const [renderBackLink, setRenderBackLink] = useState(false);
   const [showBackLink, setShowBackLink] = useState(false);
   const exitTimerRef = useRef(null);
@@ -93,40 +84,6 @@ export default function Footer() {
 
   return (
     <footer className="siteFooter">
-      <div className="footerContent">
-        {isHome || isSuperHeitor || isJogoMemoria || isAlbum || isPhotoBooth || isContatos ? (
-          <img
-            key={location.pathname}
-            className="footerLogo footerLogo--animated"
-            src={
-              isHome
-                ? ironFooter
-                : isSuperHeitor
-                  ? superFooter
-                  : isPhotoBooth
-                    ? superFooter
-                  : isJogoMemoria
-                    ? thorFooter
-                    : isAlbum
-                      ? wolFooter
-                      : ironFooter
-            }
-            alt={
-              isHome
-                ? "Heroi no footer"
-                : isSuperHeitor
-                  ? "Heroi Super Heitor no footer"
-                  : isPhotoBooth
-                    ? "Heroi Super-Homem no footer"
-                  : isJogoMemoria
-                    ? "Heroi do Jogo da Memoria no footer"
-                    : isAlbum
-                      ? "Heroi do Album no footer"
-                      : "Heroi no footer"
-            }
-          />
-        ) : null}
-      </div>
       {renderBackLink ? (
         <Link
           className={`footerLink${showBackLink ? " footerLink--animated" : " footerLink--hidden"}`}
