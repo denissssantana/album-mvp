@@ -13,6 +13,7 @@ export default function Footer() {
   const isSuperHeitor = location.pathname === "/super-heitor";
   const isJogoMemoria = location.pathname === "/jogo";
   const isAlbum = location.pathname === "/album";
+  const isPhotoBooth = location.pathname === "/album-de-fotos";
   const isContatos = location.pathname === "/contatos";
   const [renderBackLink, setRenderBackLink] = useState(false);
   const [showBackLink, setShowBackLink] = useState(false);
@@ -93,7 +94,7 @@ export default function Footer() {
   return (
     <footer className="siteFooter">
       <div className="footerContent">
-        {isHome || isSuperHeitor || isJogoMemoria || isAlbum || isContatos ? (
+        {isHome || isSuperHeitor || isJogoMemoria || isAlbum || isPhotoBooth || isContatos ? (
           <img
             key={location.pathname}
             className="footerLogo footerLogo--animated"
@@ -102,6 +103,8 @@ export default function Footer() {
                 ? ironFooter
                 : isSuperHeitor
                   ? superFooter
+                  : isPhotoBooth
+                    ? superFooter
                   : isJogoMemoria
                     ? thorFooter
                     : isAlbum
@@ -113,6 +116,8 @@ export default function Footer() {
                 ? "Heroi no footer"
                 : isSuperHeitor
                   ? "Heroi Super Heitor no footer"
+                  : isPhotoBooth
+                    ? "Heroi Super-Homem no footer"
                   : isJogoMemoria
                     ? "Heroi do Jogo da Memoria no footer"
                     : isAlbum

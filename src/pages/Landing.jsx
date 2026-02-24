@@ -97,6 +97,26 @@ export default function Landing() {
           </article>
         </div>
       </section>
+
+      <section className="sectionCard appsSection" id="album-de-fotos">
+        <h2>ÁLBUM DE FOTOS</h2>
+        <div className="appsGrid">
+          <article className="appCard">
+            <div
+              className="sectionImage albumImage"
+              role="img"
+              aria-label="Preview do álbum de fotos"
+            />
+            <div className="ctaContent">
+              <h3>Álbum de Fotos</h3>
+              <p>Tire fotos com molduras em um fluxo dedicado</p>
+              <Link className="btn btnPrimary" to="/album-de-fotos">
+                Abrir Álbum de Fotos
+              </Link>
+            </div>
+          </article>
+        </div>
+      </section>
     </div>
   );
 }
