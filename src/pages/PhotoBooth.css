@@ -442,24 +442,52 @@
 .camera-overlay {
   position: fixed;
   inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   z-index: 9999;
+}
+
+.camera-card {
+  width: 92%;
+  max-width: 420px;
   background: #000;
+  border-radius: 16px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
 .camera-video {
-  flex: 1;
   width: 100%;
-  height: 100%;
+  height: 60vh;
   object-fit: cover;
 }
 
 .camera-controls {
-  padding: 12px;
   display: flex;
-  gap: 12px;
-  justify-content: center;
+  justify-content: space-around;
+  padding: 12px;
+  background: #111;
+}
+
+.btn-capture {
+  background: #1e90ff;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 24px;
+  font-size: 16px;
+}
+
+.btn-cancel {
+  background: #444;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 24px;
+  font-size: 16px;
 }
 
 .camera-error {

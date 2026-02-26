@@ -767,26 +767,28 @@ export default function PhotoBooth() {
 
       {isCameraOpen ? (
         <div className="camera-overlay" role="dialog" aria-modal="true">
-          {cameraError ? (
-            <div className="camera-error">
-              <p>{cameraError}</p>
-              <button type="button" className="btn btnSecondary" onClick={closeCamera}>
-                Voltar
-              </button>
-            </div>
-          ) : (
-            <>
-              <video ref={videoRef} className="camera-video" playsInline muted autoPlay />
-              <div className="camera-controls">
-                <button type="button" className="btn btnPrimary" onClick={captureFromVideo}>
-                  Capturar
-                </button>
-                <button type="button" className="btn btnSecondary" onClick={closeCamera}>
-                  Cancelar
+          <div className="camera-card">
+            {cameraError ? (
+              <div className="camera-error">
+                <p>{cameraError}</p>
+                <button type="button" className="btn-cancel" onClick={closeCamera}>
+                  Voltar
                 </button>
               </div>
-            </>
-          )}
+            ) : (
+              <>
+                <video ref={videoRef} className="camera-video" playsInline muted autoPlay />
+                <div className="camera-controls">
+                  <button type="button" onClick={captureFromVideo} className="btn-capture">
+                    Capturar
+                  </button>
+                  <button type="button" onClick={closeCamera} className="btn-cancel">
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       ) : null}
 
