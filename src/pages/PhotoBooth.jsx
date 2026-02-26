@@ -119,6 +119,44 @@ function getInitialSaveCounter() {
   return 1;
 }
 
+async function resizeCapturedPhoto(file, { maxHeight = 1280, quality = 0.85 } = {}) {
+  const sourceUrl = URL.createObjectURL(file);
+  let canvas = null;
+
+  try {
+    const img = await loadImageElement(sourceUrl);
+    const sourceW = img.naturalWidth || img.width || 0;
+    const sourceH = img.naturalHeight || img.height || 0;
+    if (!sourceW || !sourceH) {
+      throw new Error("Falha ao ler dimensoes da foto");
+    }
+
+    const ratio = Math.min(1, maxHeight / sourceH);
+    const targetW = Math.max(1, Math.round(sourceW * ratio));
+    const targetH = Math.max(1, Math.round(sourceH * ratio));
+
+    canvas = document.createElement("canvas");
+    canvas.width = targetW;
+    canvas.height = targetH;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas indisponivel");
+
+    ctx.clearRect(0, 0, targetW, targetH);
+    ctx.drawImage(img, 0, 0, targetW, targetH);
+
+    const blob = await canvasToJpegBlob(canvas, quality);
+    const previewUrl = URL.createObjectURL(blob);
+    return { blob, previewUrl };
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+    if (canvas) {
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+  }
+}
+
 export default function PhotoBooth() {
   const [photo, setPhoto] = useState(null);
   const [selectedFrame, setSelectedFrame] = useState("frame-1");
@@ -271,10 +309,28 @@ export default function PhotoBooth() {
       activePhotoUrlRef.current = null;
     }
 
-    const previewUrl = URL.createObjectURL(file);
+    let processedFile = file;
+    let previewUrl = null;
+
+    try {
+      // Downscale camera captures before preview/editing to avoid keeping multi-MP images in memory.
+      const resized = await resizeCapturedPhoto(file, { maxHeight: 1280, quality: 0.85 });
+      processedFile = resized.blob;
+      previewUrl = resized.previewUrl;
+    } catch (err) {
+      console.warn("PhotoBooth resize fallback:", err);
+      previewUrl = URL.createObjectURL(file);
+    }
+
     const meta = await detectPhotoMeta(previewUrl);
     activePhotoUrlRef.current = previewUrl;
-    setPhoto({ file, previewUrl, orientation: meta.orientation, width: meta.width, height: meta.height });
+    setPhoto({
+      file: processedFile,
+      previewUrl,
+      orientation: meta.orientation,
+      width: meta.width,
+      height: meta.height,
+    });
     setScale(INITIAL_PHOTO_SCALE);
     setPosition({ x: 0, y: 0 });
     setRotation(meta.orientation === "landscape" ? 90 : 0);
