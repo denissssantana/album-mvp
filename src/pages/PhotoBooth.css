@@ -1,8 +1,14 @@
 .photoBoothPage .albumMain {
   height: calc((var(--vh) * 100) - var(--headerTotal) - var(--footerTotal));
-  overflow: hidden;
+  overflow: visible;
   padding: 12px;
   padding-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.photo-editor-container {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -20,7 +26,7 @@
 }
 
 .photoBooth__containerRoot--editing {
-  overflow: hidden;
+  overflow: visible;
   padding-bottom: 0;
   display: flex;
   flex-direction: column;
@@ -190,7 +196,7 @@
   flex: 1;
   min-height: 0;
   padding-bottom: 6px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .photoBooth__containerRoot--editing .photoBooth__stageMain {
@@ -348,8 +354,20 @@
 }
 
 .editor-actions {
-  margin-top: 24px;
-  padding-bottom: 20px;
+  padding: 24px 16px 40px 16px;
+}
+
+.editor-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-stage {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
 }
 
 .photoBooth__frameCarousel {
@@ -484,29 +502,24 @@
   border-radius: 16px 16px 0 0;
 }
 
-.camera-controls {
+.camera-actions {
   display: flex;
-  justify-content: space-around;
-  padding: 12px;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
   background: #111;
 }
 
-.btn-capture {
-  background: #1e90ff;
+.btn-primary,
+.btn-footer {
+  background: linear-gradient(#1c3c66, #0e2240);
   color: white;
   border: none;
-  padding: 12px 20px;
+  padding: 12px 24px;
   border-radius: 24px;
   font-size: 16px;
-}
-
-.btn-switch {
-  background: #444;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 24px;
-  font-size: 16px;
+  min-width: 140px;
+  text-align: center;
 }
 
 .camera-error {
@@ -520,17 +533,9 @@
 }
 
 .camera-footer {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-}
-
-.btn-footer-back {
-  background: linear-gradient(#1c3c66, #0e2240);
-  color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 20px;
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
 }
 
 @media (max-width: 560px) {
@@ -571,5 +576,15 @@
 
   .photoBooth__idleCenter {
     padding-inline: 0;
+  }
+}
+
+@media (max-height: 700px) {
+  .camera-video {
+    height: 45vh;
+  }
+
+  .editor-actions {
+    padding-bottom: 30px;
   }
 }

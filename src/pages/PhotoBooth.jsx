@@ -790,26 +790,26 @@ export default function PhotoBooth() {
             ) : (
               <>
                 <video ref={videoRef} className="camera-video" playsInline muted autoPlay />
-                <div className="camera-controls">
-                  <button type="button" onClick={captureFromVideo} className="btn-capture">
-                    Capturar
-                  </button>
-                  <button type="button" onClick={toggleCamera} className="btn-switch">
+                <div className="camera-actions">
+                  <button type="button" onClick={toggleCamera} className="btn-primary">
                     Girar câmera
+                  </button>
+                  <button type="button" onClick={captureFromVideo} className="btn-primary">
+                    Capturar
                   </button>
                 </div>
               </>
             )}
           </div>
           <div className="camera-footer">
-            <button type="button" onClick={closeCamera} className="btn-footer-back">
+            <button type="button" onClick={closeCamera} className="btn-footer">
               Voltar
             </button>
           </div>
         </div>
       ) : null}
 
-      <main className="albumMain">
+      <main className="albumMain photo-editor-container">
         <div
           className={`container photoBooth__containerRoot${
             step === "moldura" && photo ? " photoBooth__containerRoot--editing" : " photoBooth__containerRoot--capture"
@@ -835,7 +835,7 @@ export default function PhotoBooth() {
           ) : null}
 
           {step === "moldura" && photo && (
-            <div className="photoBooth__stageMain">
+            <div className="photoBooth__stageMain editor-stage">
               <div className="photoBooth__stageWrap">
                 <button
                   type="button"
@@ -847,7 +847,7 @@ export default function PhotoBooth() {
                 </button>
 
                 <div
-                  className={`photoBooth__photoViewport photoBooth__singlePreview${
+                  className={`photoBooth__photoViewport photoBooth__singlePreview photo-stage${
                     isDragging ? " isDragging" : ""
                   }`}
                   style={framePreviewStyle}
