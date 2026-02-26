@@ -167,7 +167,12 @@ export default function PhotoBooth() {
   const [status, setStatus] = useState("idle");
   const [isDragging, setIsDragging] = useState(false);
   const [previewMaskSize, setPreviewMaskSize] = useState({ width: 0, height: 0 });
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
   const fileInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const cameraSessionRef = useRef(0);
   const activePhotoUrlRef = useRef(null);
   const previewViewportRef = useRef(null);
   const saveSequenceRef = useRef(getInitialSaveCounter());
@@ -196,8 +201,27 @@ export default function PhotoBooth() {
   );
   const [frameMetricsById, setFrameMetricsById] = useState({});
 
+  function stopCameraStream() {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.pause?.();
+      videoRef.current.srcObject = null;
+    }
+  }
+
+  function closeCamera() {
+    cameraSessionRef.current += 1;
+    stopCameraStream();
+    setIsCameraOpen(false);
+    setCameraError(null);
+  }
+
   useEffect(() => {
     return () => {
+      stopCameraStream();
       if (activePhotoUrlRef.current) {
         URL.revokeObjectURL(activePhotoUrlRef.current);
         activePhotoUrlRef.current = null;
@@ -269,14 +293,10 @@ export default function PhotoBooth() {
     };
   }, [activeFrame.id, activeFrame.src, step]);
 
-  function openCameraCapture() {
-    fileInputRef.current?.click();
-  }
-
   function handleRetakePhoto() {
     setStep("captura");
     setStatus(photo ? "editing" : "idle");
-    openCameraCapture();
+    openCamera();
   }
 
   async function detectPhotoMeta(fileUrl) {
@@ -337,6 +357,111 @@ export default function PhotoBooth() {
     setSelectedFrame(frameItems[0].id);
     setStep("moldura");
     setStatus("editing");
+  }
+
+  async function openCamera() {
+    setCameraError(null);
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      fileInputRef.current?.click();
+      return;
+    }
+
+    const sessionId = cameraSessionRef.current + 1;
+    cameraSessionRef.current = sessionId;
+    stopCameraStream();
+    setIsCameraOpen(true);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      });
+      if (cameraSessionRef.current !== sessionId) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      streamRef.current = stream;
+
+      const videoEl = videoRef.current;
+      if (videoEl) {
+        videoEl.srcObject = stream;
+        await videoEl.play();
+      }
+    } catch (err) {
+      if (cameraSessionRef.current !== sessionId) return;
+      console.error("PhotoBooth camera error:", err);
+      stopCameraStream();
+      setCameraError("Não foi possível abrir a câmera.");
+    }
+  }
+
+  async function captureFromVideo() {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+
+    const sourceW = videoEl.videoWidth || 0;
+    const sourceH = videoEl.videoHeight || 0;
+    if (!sourceW || !sourceH) {
+      setCameraError("A câmera não está pronta para capturar.");
+      return;
+    }
+
+    const maxWidth = 1280;
+    const ratio = Math.min(1, maxWidth / sourceW);
+    const outW = Math.max(1, Math.round(sourceW * ratio));
+    const outH = Math.max(1, Math.round(sourceH * ratio));
+
+    let canvas = null;
+
+    try {
+      canvas = document.createElement("canvas");
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas indisponivel");
+
+      ctx.drawImage(videoEl, 0, 0, outW, outH);
+      const blob = await canvasToJpegBlob(canvas, 0.85);
+      const previewUrl = URL.createObjectURL(blob);
+
+      if (activePhotoUrlRef.current) {
+        URL.revokeObjectURL(activePhotoUrlRef.current);
+        activePhotoUrlRef.current = null;
+      }
+
+      const nextFile = new File([blob], "capture.jpg", { type: "image/jpeg" });
+      const orientation = outW > outH ? "landscape" : "portrait";
+
+      activePhotoUrlRef.current = previewUrl;
+      setPhoto({
+        file: nextFile,
+        previewUrl,
+        orientation,
+        width: outW,
+        height: outH,
+      });
+      setScale(INITIAL_PHOTO_SCALE);
+      setPosition({ x: 0, y: 0 });
+      setRotation(orientation === "landscape" ? 90 : 0);
+      setSelectedFrame(frameItems[0].id);
+      setStep("moldura");
+      setStatus("editing");
+    } catch (err) {
+      console.error("PhotoBooth capture error:", err);
+      setCameraError("Falha ao capturar foto.");
+      return;
+    } finally {
+      if (canvas) {
+        canvas.width = 0;
+        canvas.height = 0;
+      }
+      closeCamera();
+    }
   }
 
   function handleZoom(delta) {
@@ -640,6 +765,31 @@ export default function PhotoBooth() {
         className="photoBooth__fileInput"
       />
 
+      {isCameraOpen ? (
+        <div className="camera-overlay" role="dialog" aria-modal="true">
+          {cameraError ? (
+            <div className="camera-error">
+              <p>{cameraError}</p>
+              <button type="button" className="btn btnSecondary" onClick={closeCamera}>
+                Voltar
+              </button>
+            </div>
+          ) : (
+            <>
+              <video ref={videoRef} className="camera-video" playsInline muted autoPlay />
+              <div className="camera-controls">
+                <button type="button" className="btn btnPrimary" onClick={captureFromVideo}>
+                  Capturar
+                </button>
+                <button type="button" className="btn btnSecondary" onClick={closeCamera}>
+                  Cancelar
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      ) : null}
+
       <main className="albumMain">
         <div
           className={`container photoBooth__containerRoot${
@@ -658,7 +808,7 @@ export default function PhotoBooth() {
               <button
                 type="button"
                 className="btn btnPrimary bigAdd photoBooth__captureBtn"
-                onClick={openCameraCapture}
+                onClick={openCamera}
               >
                 Tirar uma foto
               </button>
