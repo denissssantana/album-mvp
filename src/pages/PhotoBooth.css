@@ -21,7 +21,10 @@
 
 .photoBooth__containerRoot--editing {
   overflow: hidden;
-  padding-bottom: calc(var(--barH) + 12px);
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .photoBoothPage .albumPageTitle {
@@ -191,7 +194,7 @@
 }
 
 .photoBooth__containerRoot--editing .photoBooth__stageMain {
-  transform: translateY(-16px);
+  transform: none;
 }
 
 .photoBooth__headline {
@@ -331,7 +334,22 @@
 }
 
 .photoBooth__editingBar {
-  bottom: calc(var(--footerTotal) + 16px);
+  position: static;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  min-height: auto;
+  z-index: auto;
+  margin-top: 24px;
+  padding: 10px 0 20px;
+  box-shadow: none;
+  border-top: 0;
+  background: transparent;
+}
+
+.editor-actions {
+  margin-top: 24px;
+  padding-bottom: 20px;
 }
 
 .photoBooth__frameCarousel {
@@ -461,8 +479,9 @@
 
 .camera-video {
   width: 100%;
-  height: 60vh;
+  height: 50vh;
   object-fit: cover;
+  border-radius: 16px 16px 0 0;
 }
 
 .camera-controls {
@@ -481,7 +500,7 @@
   font-size: 16px;
 }
 
-.btn-cancel {
+.btn-switch {
   background: #444;
   color: white;
   border: none;
@@ -498,6 +517,20 @@
   padding: 24px;
   color: #fff;
   text-align: center;
+}
+
+.camera-footer {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+}
+
+.btn-footer-back {
+  background: linear-gradient(#1c3c66, #0e2240);
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 20px;
 }
 
 @media (max-width: 560px) {

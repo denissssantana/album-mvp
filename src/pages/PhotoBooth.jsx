@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import frame1 from "../assets/frames/mold-v-amarela.png";
 import frame2 from "../assets/frames/mold-v-azul.png";
 import frame3 from "../assets/frames/mold-v-laranja.png";
+import frame4 from "../assets/frames/mold-v-verde.png";
+import frame5 from "../assets/frames/mold-v-vermelha.png";
 import "./PhotoBooth.css";
 
 const FRAME_ART_SIZE = { w: 720, h: 1280 };
@@ -169,6 +171,7 @@ export default function PhotoBooth() {
   const [previewMaskSize, setPreviewMaskSize] = useState({ width: 0, height: 0 });
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState(null);
+  const [facingMode, setFacingMode] = useState("environment");
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -192,6 +195,8 @@ export default function PhotoBooth() {
     { id: "frame-1", label: "Moldura 1", src: frame1, frameBox: FRAME_ART_SIZE, photoBox: FRAME_PHOTO_MASK },
     { id: "frame-2", label: "Moldura 2", src: frame2, frameBox: FRAME_ART_SIZE, photoBox: FRAME_PHOTO_MASK },
     { id: "frame-3", label: "Moldura 3", src: frame3, frameBox: FRAME_ART_SIZE, photoBox: FRAME_PHOTO_MASK },
+    { id: "frame-4", label: "Moldura 4", src: frame4, frameBox: FRAME_ART_SIZE, photoBox: FRAME_PHOTO_MASK },
+    { id: "frame-5", label: "Moldura 5", src: frame5, frameBox: FRAME_ART_SIZE, photoBox: FRAME_PHOTO_MASK },
   ];
   const activeFrame =
     frameItems.find((frame) => frame.id === selectedFrame) || frameItems[0];
@@ -359,7 +364,7 @@ export default function PhotoBooth() {
     setStatus("editing");
   }
 
-  async function openCamera() {
+  async function openCamera(nextFacingMode = facingMode) {
     setCameraError(null);
 
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -375,7 +380,7 @@ export default function PhotoBooth() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: { ideal: "environment" },
+          facingMode: { ideal: nextFacingMode },
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -398,6 +403,13 @@ export default function PhotoBooth() {
       stopCameraStream();
       setCameraError("Não foi possível abrir a câmera.");
     }
+  }
+
+  async function toggleCamera() {
+    const nextFacingMode = facingMode === "environment" ? "user" : "environment";
+    setFacingMode(nextFacingMode);
+    closeCamera();
+    await openCamera(nextFacingMode);
   }
 
   async function captureFromVideo() {
@@ -713,7 +725,8 @@ export default function PhotoBooth() {
     try {
       const blob = await buildFinalJpegForOutput();
       if (!blob) return;
-      const fileName = `foto_${saveSequenceRef.current}.jpg`;
+      const fileName = `IMG_Heitor_${saveSequenceRef.current}.jpg`;
+      const jpegBlob = blob.type === "image/jpeg" ? blob : new Blob([blob], { type: "image/jpeg" });
 
       if (window.showSaveFilePicker) {
         const handle = await window.showSaveFilePicker({
@@ -726,13 +739,15 @@ export default function PhotoBooth() {
           ],
         });
         const writable = await handle.createWritable();
-        await writable.write(blob);
+        await writable.write(jpegBlob);
         await writable.close();
       } else {
-        const downloadUrl = URL.createObjectURL(blob);
+        const downloadUrl = URL.createObjectURL(jpegBlob);
         const a = document.createElement("a");
         a.href = downloadUrl;
         a.download = fileName;
+        a.setAttribute("download", fileName);
+        a.rel = "noopener";
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -771,9 +786,6 @@ export default function PhotoBooth() {
             {cameraError ? (
               <div className="camera-error">
                 <p>{cameraError}</p>
-                <button type="button" className="btn-cancel" onClick={closeCamera}>
-                  Voltar
-                </button>
               </div>
             ) : (
               <>
@@ -782,12 +794,17 @@ export default function PhotoBooth() {
                   <button type="button" onClick={captureFromVideo} className="btn-capture">
                     Capturar
                   </button>
-                  <button type="button" onClick={closeCamera} className="btn-cancel">
-                    Cancelar
+                  <button type="button" onClick={toggleCamera} className="btn-switch">
+                    Girar câmera
                   </button>
                 </div>
               </>
             )}
+          </div>
+          <div className="camera-footer">
+            <button type="button" onClick={closeCamera} className="btn-footer-back">
+              Voltar
+            </button>
           </div>
         </div>
       ) : null}
@@ -877,7 +894,7 @@ export default function PhotoBooth() {
 
         {step === "moldura" && photo ? (
           <div className="bottomBar photoBooth__editingBar">
-            <div className="collageActions">
+            <div className="collageActions editor-actions">
               <button
                 type="button"
                 className="btn btnSecondary"
