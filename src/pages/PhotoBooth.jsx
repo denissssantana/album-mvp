@@ -195,6 +195,10 @@ export default function PhotoBooth() {
   useEffect(() => {
     let cancelled = false;
 
+    if (step === "captura") {
+      return;
+    }
+
     async function ensureFrameMetrics(frame) {
       if (!frame) return;
       if (frameMetricsCacheRef.current.has(frame.id)) return;
@@ -225,7 +229,7 @@ export default function PhotoBooth() {
     return () => {
       cancelled = true;
     };
-  }, [activeFrame.id, activeFrame.src]);
+  }, [activeFrame.id, activeFrame.src, step]);
 
   function openCameraCapture() {
     fileInputRef.current?.click();
