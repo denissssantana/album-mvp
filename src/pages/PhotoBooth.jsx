@@ -205,6 +205,7 @@ export default function PhotoBooth() {
     frameItems.findIndex((frame) => frame.id === activeFrame.id)
   );
   const [frameMetricsById, setFrameMetricsById] = useState({});
+  const [frameMetricsReady, setFrameMetricsReady] = useState(false);
 
   function stopCameraStream() {
     if (streamRef.current) {
@@ -263,12 +264,16 @@ export default function PhotoBooth() {
     let cancelled = false;
 
     if (step === "captura") {
+      setFrameMetricsReady(false);
       return;
     }
 
     async function ensureFrameMetrics(frame) {
       if (!frame) return;
-      if (frameMetricsCacheRef.current.has(frame.id)) return;
+      if (frameMetricsCacheRef.current.has(frame.id)) {
+        if (!cancelled) setFrameMetricsReady(true);
+        return;
+      }
       try {
         const frameImg = await loadImageElement(frame.src);
         if (cancelled) return;
@@ -280,6 +285,7 @@ export default function PhotoBooth() {
         const metrics = { frameBox, outerBox };
         frameMetricsCacheRef.current.set(frame.id, metrics);
         setFrameMetricsById((prev) => (prev[frame.id] ? prev : { ...prev, [frame.id]: metrics }));
+        if (!cancelled) setFrameMetricsReady(true);
       } catch {
         const safeFrameBox = frame.frameBox || FRAME_ART_SIZE;
         const metrics = {
@@ -288,9 +294,11 @@ export default function PhotoBooth() {
         };
         frameMetricsCacheRef.current.set(frame.id, metrics);
         setFrameMetricsById((prev) => (prev[frame.id] ? prev : { ...prev, [frame.id]: metrics }));
+        if (!cancelled) setFrameMetricsReady(true);
       }
     }
 
+    setFrameMetricsReady(false);
     ensureFrameMetrics(activeFrame);
 
     return () => {
@@ -299,6 +307,7 @@ export default function PhotoBooth() {
   }, [activeFrame.id, activeFrame.src, step]);
 
   function handleRetakePhoto() {
+    setFrameMetricsReady(false);
     setStep("captura");
     setStatus(photo ? "editing" : "idle");
     openCamera();
@@ -359,6 +368,7 @@ export default function PhotoBooth() {
     setScale(INITIAL_PHOTO_SCALE);
     setPosition({ x: 0, y: 0 });
     setRotation(meta.orientation === "landscape" ? 90 : 0);
+    setFrameMetricsReady(false);
     setSelectedFrame(frameItems[0].id);
     setStep("moldura");
     setStatus("editing");
@@ -460,6 +470,7 @@ export default function PhotoBooth() {
       setScale(INITIAL_PHOTO_SCALE);
       setPosition({ x: 0, y: 0 });
       setRotation(orientation === "landscape" ? 90 : 0);
+      setFrameMetricsReady(false);
       setSelectedFrame(frameItems[0].id);
       setStep("moldura");
       setStatus("editing");
@@ -561,6 +572,7 @@ export default function PhotoBooth() {
 
   function selectFrameByOffset(offset) {
     const nextIndex = (selectedFrameIndex + offset + frameItems.length) % frameItems.length;
+    setFrameMetricsReady(false);
     setSelectedFrame(frameItems[nextIndex].id);
   }
 
@@ -782,27 +794,29 @@ export default function PhotoBooth() {
 
       {isCameraOpen ? (
         <div className="camera-overlay" role="dialog" aria-modal="true">
-          <div className="camera-card">
-            {cameraError ? (
-              <div className="camera-error">
-                <p>{cameraError}</p>
-              </div>
-            ) : (
-              <>
-                <video ref={videoRef} className="camera-video" playsInline muted autoPlay />
-                <div className="camera-actions">
-                  <button type="button" onClick={toggleCamera} className="btn-primary">
-                    Girar câmera
-                  </button>
-                  <button type="button" onClick={captureFromVideo} className="btn-primary">
-                    Capturar
-                  </button>
+          <div className="camera-card-wrapper">
+            <div className="camera-card">
+              {cameraError ? (
+                <div className="camera-error">
+                  <p>{cameraError}</p>
                 </div>
-              </>
-            )}
+              ) : (
+                <>
+                  <video ref={videoRef} className="camera-video" playsInline muted autoPlay />
+                  <div className="camera-actions">
+                    <button type="button" onClick={toggleCamera} className="btn-standard">
+                      Girar câmera
+                    </button>
+                    <button type="button" onClick={captureFromVideo} className="btn-standard">
+                      Capturar
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
           <div className="camera-footer">
-            <button type="button" onClick={closeCamera} className="btn-footer">
+            <button type="button" onClick={closeCamera} className="btn-standard">
               Voltar
             </button>
           </div>
@@ -826,7 +840,7 @@ export default function PhotoBooth() {
             <div className="photoBooth__idleCenter">
               <button
                 type="button"
-                className="btn btnPrimary bigAdd photoBooth__captureBtn"
+                className="btn-standard photoBooth__captureBtn"
                 onClick={openCamera}
               >
                 Tirar uma foto
@@ -835,8 +849,9 @@ export default function PhotoBooth() {
           ) : null}
 
           {step === "moldura" && photo && (
-            <div className="photoBooth__stageMain editor-stage">
-              <div className="photoBooth__stageWrap">
+            <div className="photoBooth__stageMain editor-stage-wrapper">
+              <div className={`photo-stage${frameMetricsReady ? " ready" : ""}`}>
+                <div className="photoBooth__stageWrap">
                 <button
                   type="button"
                   className="superHeitorArrow photoBooth__frameArrow photoBooth__frameArrow--left"
@@ -846,38 +861,38 @@ export default function PhotoBooth() {
                   ❮
                 </button>
 
-                <div
-                  className={`photoBooth__photoViewport photoBooth__singlePreview photo-stage${
-                    isDragging ? " isDragging" : ""
-                  }`}
-                  style={framePreviewStyle}
-                >
                   <div
-                    className={`photo-mask${isDragging ? " isDragging" : ""}`}
-                    ref={previewViewportRef}
-                    onPointerDown={onPhotoPointerDown}
-                    onPointerMove={onPhotoPointerMove}
-                    onPointerUp={onPhotoPointerEnd}
-                    onPointerCancel={onPhotoPointerEnd}
+                    className={`photoBooth__photoViewport photoBooth__singlePreview${
+                      isDragging ? " isDragging" : ""
+                    }`}
+                    style={framePreviewStyle}
                   >
-                    <img
-                      className="photoBooth__editingPhotoImage"
-                      src={photo.previewUrl}
-                      alt="Foto capturada"
-                      draggable={false}
-                      style={photoPreviewStyle}
-                    />
-                  </div>
+                    <div
+                      className={`photo-mask${isDragging ? " isDragging" : ""}`}
+                      ref={previewViewportRef}
+                      onPointerDown={onPhotoPointerDown}
+                      onPointerMove={onPhotoPointerMove}
+                      onPointerUp={onPhotoPointerEnd}
+                      onPointerCancel={onPhotoPointerEnd}
+                    >
+                      <img
+                        className="photoBooth__editingPhotoImage"
+                        src={photo.previewUrl}
+                        alt="Foto capturada"
+                        draggable={false}
+                        style={photoPreviewStyle}
+                      />
+                    </div>
 
-                  <div className="photoBooth__frameOverlay" aria-hidden="true">
-                    <img
-                      className="photoBooth__frameOverlayImage"
-                      src={activeFrame.src}
-                      alt=""
-                      style={frameOverlayImageStyle}
-                    />
+                    <div className="photoBooth__frameOverlay" aria-hidden="true">
+                      <img
+                        className="photoBooth__frameOverlayImage"
+                        src={activeFrame.src}
+                        alt=""
+                        style={frameOverlayImageStyle}
+                      />
+                    </div>
                   </div>
-                </div>
 
                 <button
                   type="button"
@@ -887,6 +902,7 @@ export default function PhotoBooth() {
                 >
                   ❯
                 </button>
+                </div>
               </div>
             </div>
           )}
@@ -897,7 +913,7 @@ export default function PhotoBooth() {
             <div className="collageActions editor-actions">
               <button
                 type="button"
-                className="btn btnSecondary"
+                className="btn-standard"
                 onClick={handleRetakePhoto}
                 disabled={status === "exporting"}
               >
@@ -905,7 +921,7 @@ export default function PhotoBooth() {
               </button>
               <button
                 type="button"
-                className="btn btnPrimary"
+                className="btn-standard"
                 onClick={handleSavePhoto}
                 disabled={!photo || status === "exporting"}
               >
@@ -913,7 +929,7 @@ export default function PhotoBooth() {
               </button>
               <button
                 type="button"
-                className="btn btnSecondary"
+                className="btn-standard"
                 onClick={handleSendToHeitor}
                 disabled={!photo || status === "exporting"}
               >
