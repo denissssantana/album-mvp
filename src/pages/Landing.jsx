@@ -9,23 +9,29 @@ export default function Landing() {
     <div className="landingPage">
       <section className="hero" id="topo">
         <div className="heroIntroContent">
-          <div className="heroMediaFrame" aria-hidden="true">
-            <video
-              className="heroVideo"
-              autoPlay
-              muted
-              playsInline
-              preload="auto"
-            >
-              <source src={introVideo} type="video/mp4" />
-            </video>
+          <div className="heroTitleBand">
+            <h2 className="heroAppTitle">App do Heitor</h2>
           </div>
-          <h1 className="heroWelcome">Seja bem-vindo à festa do Heitor!</h1>
+          <div className="heroMediaBand">
+            <div className="heroMediaFrame" aria-hidden="true">
+              <video
+                className="heroVideo"
+                autoPlay
+                muted
+                playsInline
+                preload="auto"
+              >
+                <source src={introVideo} type="video/mp4" />
+              </video>
+            </div>
+          </div>
+          <div className="heroWelcomeBand">
+            <h1 className="heroWelcome">Seja bem-vindo à festa do Heitor!</h1>
+          </div>
         </div>
       </section>
 
       <section className="sectionCard appsSection" id="aplicacoes">
-        <h2>App do Heitor</h2>
         <div className="appsGrid">
           <article className="appCard">
             <div className="sectionImage superHeitorImage">
@@ -70,7 +76,7 @@ export default function Landing() {
             <div className="ctaContent">
               <h3>Álbum Virtual</h3>
               <p>Relembre os momentos especiais da festa</p>
-              <Link className="btn btnPrimary" to="/album">
+              <Link className="btn btnPrimary" to="/album-de-fotos">
                 Abrir Álbum Virtual
               </Link>
             </div>
@@ -92,26 +98,6 @@ export default function Landing() {
               </p>
               <Link className="btn btnPrimary" to="/contatos">
                 Abrir Contato
-              </Link>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section className="sectionCard appsSection" id="album-de-fotos">
-        <h2>ÁLBUM DE FOTOS</h2>
-        <div className="appsGrid">
-          <article className="appCard">
-            <div
-              className="sectionImage albumImage"
-              role="img"
-              aria-label="Preview do álbum de fotos"
-            />
-            <div className="ctaContent">
-              <h3>Álbum de Fotos</h3>
-              <p>Tire fotos com molduras em um fluxo dedicado</p>
-              <Link className="btn btnPrimary" to="/album-de-fotos">
-                Abrir Álbum de Fotos
               </Link>
             </div>
           </article>

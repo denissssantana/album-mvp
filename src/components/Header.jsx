@@ -6,8 +6,7 @@ const navItems = [
   { to: "/", label: "Início" },
   { to: "/super-heitor", label: "Super Heitor" },
   { to: "/jogo", label: "Jogo da Memória" },
-  { to: "/album", label: "Álbum Virtual" },
-  { to: "/album-de-fotos", label: "Álbum de Fotos" },
+  { to: "/album-de-fotos", label: "Álbum Virtual" },
   { to: "/contatos", label: "Contatos" },
 ];
 

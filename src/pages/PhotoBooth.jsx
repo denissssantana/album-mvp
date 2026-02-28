@@ -4,6 +4,7 @@ import frame2 from "../assets/frames/mold-v-azul.png";
 import frame3 from "../assets/frames/mold-v-laranja.png";
 import frame4 from "../assets/frames/mold-v-verde.png";
 import frame5 from "../assets/frames/mold-v-vermelha.png";
+import appHeitorImage from "../assets/images/heitor-camera.jpg";
 import "./PhotoBooth.css";
 
 const FRAME_ART_SIZE = { w: 720, h: 1280 };
@@ -171,7 +172,7 @@ export default function PhotoBooth() {
   const [previewMaskSize, setPreviewMaskSize] = useState({ width: 0, height: 0 });
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState(null);
-  const [facingMode, setFacingMode] = useState("environment");
+  const [facingMode, setFacingMode] = useState("user");
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -374,6 +375,23 @@ export default function PhotoBooth() {
     setStatus("editing");
   }
 
+  async function requestCameraStream(nextFacingMode, exact = true) {
+    const facingConstraint = exact
+      ? { facingMode: { exact: nextFacingMode } }
+      : nextFacingMode
+        ? { facingMode: { ideal: nextFacingMode } }
+        : {};
+
+    return navigator.mediaDevices.getUserMedia({
+      video: {
+        ...facingConstraint,
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    });
+  }
+
   async function openCamera(nextFacingMode = facingMode) {
     setCameraError(null);
 
@@ -387,38 +405,59 @@ export default function PhotoBooth() {
     stopCameraStream();
     setIsCameraOpen(true);
 
+    let stream = null;
+    let resolvedFacingMode = nextFacingMode;
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: nextFacingMode },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      });
+      try {
+        stream = await requestCameraStream(nextFacingMode, true);
+      } catch {
+        if (nextFacingMode === "user") {
+          resolvedFacingMode = "environment";
+          try {
+            stream = await requestCameraStream("environment", true);
+          } catch {
+            stream = await requestCameraStream("environment", false);
+          }
+        } else {
+          stream = await requestCameraStream(nextFacingMode, false);
+        }
+      }
+
       if (cameraSessionRef.current !== sessionId) {
         stream.getTracks().forEach((track) => track.stop());
         return;
       }
+
+      const activeTrack = stream.getVideoTracks?.()[0];
+      const actualFacingMode = activeTrack?.getSettings?.().facingMode;
+      if (actualFacingMode === "user" || actualFacingMode === "environment") {
+        resolvedFacingMode = actualFacingMode;
+      }
+
       streamRef.current = stream;
+      setFacingMode(resolvedFacingMode);
 
       const videoEl = videoRef.current;
       if (videoEl) {
+        videoEl.pause?.();
+        videoEl.srcObject = null;
         videoEl.srcObject = stream;
         await videoEl.play();
       }
     } catch (err) {
       if (cameraSessionRef.current !== sessionId) return;
       console.error("PhotoBooth camera error:", err);
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
       stopCameraStream();
       setCameraError("Não foi possível abrir a câmera.");
     }
   }
 
   async function toggleCamera() {
-    const nextFacingMode = facingMode === "environment" ? "user" : "environment";
-    setFacingMode(nextFacingMode);
-    closeCamera();
+    const nextFacingMode = facingMode === "user" ? "environment" : "user";
     await openCamera(nextFacingMode);
   }
 
@@ -792,17 +831,39 @@ export default function PhotoBooth() {
         className="photoBooth__fileInput"
       />
 
-      {isCameraOpen ? (
-        <div className="camera-overlay" role="dialog" aria-modal="true">
-          <div className="camera-card-wrapper">
-            <div className="camera-card">
-              {cameraError ? (
-                <div className="camera-error">
-                  <p>{cameraError}</p>
-                </div>
-              ) : (
-                <>
-                  <video ref={videoRef} className="camera-video" playsInline muted autoPlay />
+      <main className="albumMain photo-editor-container">
+        <div
+          className={`container photoBooth__containerRoot${
+            isCameraOpen
+              ? " photoBooth__containerRoot--camera"
+              : step === "moldura" && photo
+                ? " photoBooth__containerRoot--editing"
+                : " photoBooth__containerRoot--capture"
+          }`}
+        >
+          <div className="photoBooth__topCopy">
+            <h1 className="page-title albumPageTitle">Álbum Virtual</h1>
+            <p className="superHeitorSubtitle photoBooth__headline">
+              Tire uma foto, guarde pra você e mande para Heitor
+            </p>
+          </div>
+
+          {isCameraOpen ? (
+            <div className="camera-container">
+              <div className="camera-preview">
+                {cameraError ? (
+                  <div className="camera-error">
+                    <p>{cameraError}</p>
+                  </div>
+                ) : (
+                  <div className="camera-wrapper">
+                    <video ref={videoRef} className="camera-video" playsInline muted autoPlay />
+                  </div>
+                )}
+              </div>
+
+              {!cameraError ? (
+                <div className="buttons-container">
                   <div className="camera-actions">
                     <button type="button" onClick={toggleCamera} className="btn-standard">
                       Girar câmera
@@ -811,44 +872,31 @@ export default function PhotoBooth() {
                       Capturar
                     </button>
                   </div>
-                </>
-              )}
+                </div>
+              ) : null}
             </div>
-          </div>
-          <div className="camera-footer">
-            <button type="button" onClick={closeCamera} className="btn-standard">
-              Voltar
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      <main className="albumMain photo-editor-container">
-        <div
-          className={`container photoBooth__containerRoot${
-            step === "moldura" && photo ? " photoBooth__containerRoot--editing" : " photoBooth__containerRoot--capture"
-          }`}
-        >
-          <div className="photoBooth__topCopy">
-            <h1 className="page-title albumPageTitle">Álbum de Fotos</h1>
-            <p className="superHeitorSubtitle photoBooth__headline">
-              Tire uma foto, guarde pra você e mande para Heitor
-            </p>
-          </div>
-
-          {step !== "moldura" || !photo ? (
+          ) : step !== "moldura" || !photo ? (
             <div className="photoBooth__idleCenter">
-              <button
-                type="button"
-                className="btn-standard photoBooth__captureBtn"
-                onClick={openCamera}
-              >
-                Tirar uma foto
-              </button>
+              <div className="photoBooth__idleIntro">
+                <div className="photoBooth__idleMediaFrame">
+                  <img
+                    className="photoBooth__idleMediaImage"
+                    src={appHeitorImage}
+                    alt="Ilustração do Álbum Virtual"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn-standard photoBooth__captureBtn"
+                  onClick={openCamera}
+                >
+                  Tirar uma foto
+                </button>
+              </div>
             </div>
           ) : null}
 
-          {step === "moldura" && photo && (
+          {step === "moldura" && photo && !isCameraOpen && (
             <div className="photoBooth__stageMain editor-stage-wrapper">
               <div className={`photo-stage${frameMetricsReady ? " ready" : ""}`}>
                 <div className="photoBooth__stageWrap">
@@ -908,7 +956,7 @@ export default function PhotoBooth() {
           )}
         </div>
 
-        {step === "moldura" && photo ? (
+        {step === "moldura" && photo && !isCameraOpen ? (
           <div className="bottomBar photoBooth__editingBar">
             <div className="collageActions editor-actions">
               <button
