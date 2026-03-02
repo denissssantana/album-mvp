@@ -865,6 +865,7 @@ a {
 .sectionImage {
   width: 100%;
   height: 160px;
+  margin: 0 auto;
   border-radius: 16px;
   background: #dce6f9;
   display: flex;
@@ -964,6 +965,17 @@ a {
   box-shadow: 0 12px 24px rgba(5, 12, 28, 0.45);
 }
 
+.albumCardPreview {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  margin: 0 auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .gameImage {
   background:
     linear-gradient(135deg, rgba(99, 149, 225, 0.3), rgba(204, 228, 255, 0.1)),
@@ -972,10 +984,11 @@ a {
 }
 
 .albumImage {
-  background:
-    linear-gradient(135deg, rgba(50, 95, 173, 0.36), rgba(207, 229, 255, 0.15)),
-    radial-gradient(circle at 80% 30%, rgba(171, 212, 255, 0.4), transparent 48%),
-    linear-gradient(120deg, rgba(21, 43, 88, 0.7), rgba(12, 24, 49, 0.94));
+  width: min(100%, 84%);
+  border-radius: 14px;
+  background: #ffffff;
+  background-color: #ffffff;
+  box-shadow: 0 12px 24px rgba(5, 12, 28, 0.45);
 }
 
 .contatoImage {

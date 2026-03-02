@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import frame1 from "../assets/frames/mold-v-amarela.png";
-import frame2 from "../assets/frames/mold-v-azul.png";
-import frame3 from "../assets/frames/mold-v-laranja.png";
-import frame4 from "../assets/frames/mold-v-verde.png";
-import frame5 from "../assets/frames/mold-v-vermelha.png";
+import frame1 from "../assets/frames/moldura_1.png";
+import frame2 from "../assets/frames/moldura_2.png";
+import frame3 from "../assets/frames/moldura_3.png";
+import frame4 from "../assets/frames/Moldura_4.png";
+import frame5 from "../assets/frames/moldura_5.png";
+import frame6 from "../assets/frames/moldura_6.png";
+import frame7 from "../assets/frames/moldura_7.png";
 import appHeitorImage from "../assets/images/heitor-camera.jpg";
 import "./PhotoBooth.css";
 
-const FRAME_ART_SIZE = { w: 720, h: 1280 };
-const FRAME_PHOTO_MASK = { x: 168, y: 334, w: 368, h: 500, r: 0 };
+const FRAME_ART_SIZE = { w: 519, h: 821 };
+const FRAME_PHOTO_MASK = { x: 35, y: 35, w: 449, h: 611, r: 0 };
 const INITIAL_PHOTO_SCALE = 0.94;
 
 function loadImageElement(src) {
@@ -198,6 +200,8 @@ export default function PhotoBooth() {
     { id: "frame-3", label: "Moldura 3", src: frame3, frameBox: FRAME_ART_SIZE, photoBox: FRAME_PHOTO_MASK },
     { id: "frame-4", label: "Moldura 4", src: frame4, frameBox: FRAME_ART_SIZE, photoBox: FRAME_PHOTO_MASK },
     { id: "frame-5", label: "Moldura 5", src: frame5, frameBox: FRAME_ART_SIZE, photoBox: FRAME_PHOTO_MASK },
+    { id: "frame-6", label: "Moldura 6", src: frame6, frameBox: FRAME_ART_SIZE, photoBox: FRAME_PHOTO_MASK },
+    { id: "frame-7", label: "Moldura 7", src: frame7, frameBox: FRAME_ART_SIZE, photoBox: FRAME_PHOTO_MASK },
   ];
   const activeFrame =
     frameItems.find((frame) => frame.id === selectedFrame) || frameItems[0];
@@ -278,12 +282,15 @@ export default function PhotoBooth() {
       try {
         const frameImg = await loadImageElement(frame.src);
         if (cancelled) return;
-        const frameBox = {
-          w: frameImg.naturalWidth || frameImg.width || frame.frameBox?.w || FRAME_ART_SIZE.w,
-          h: frameImg.naturalHeight || frameImg.height || frame.frameBox?.h || FRAME_ART_SIZE.h,
+        const frameBox = frame.frameBox || {
+          w: frameImg.naturalWidth || frameImg.width || FRAME_ART_SIZE.w,
+          h: frameImg.naturalHeight || frameImg.height || FRAME_ART_SIZE.h,
         };
-        const outerBox = getOpaqueBoundsFromImage(frameImg);
-        const metrics = { frameBox, outerBox };
+        const metrics = {
+          frameBox,
+          outerBox: { x: 0, y: 0, w: frameBox.w, h: frameBox.h },
+          opaqueBounds: getOpaqueBoundsFromImage(frameImg),
+        };
         frameMetricsCacheRef.current.set(frame.id, metrics);
         setFrameMetricsById((prev) => (prev[frame.id] ? prev : { ...prev, [frame.id]: metrics }));
         if (!cancelled) setFrameMetricsReady(true);
@@ -632,14 +639,18 @@ export default function PhotoBooth() {
         loadImageElement(activeFrame.src),
       ]);
 
-      const frameBox = {
-        w: frameImg.naturalWidth || frameImg.width || activeFrame.frameBox?.w || FRAME_ART_SIZE.w,
-        h: frameImg.naturalHeight || frameImg.height || activeFrame.frameBox?.h || FRAME_ART_SIZE.h,
+      const frameBox = activeFrame.frameBox || {
+        w: frameImg.naturalWidth || frameImg.width || FRAME_ART_SIZE.w,
+        h: frameImg.naturalHeight || frameImg.height || FRAME_ART_SIZE.h,
       };
       const cachedMetrics = frameMetricsCacheRef.current.get(activeFrame.id);
-      const outerBox = cachedMetrics?.outerBox || getOpaqueBoundsFromImage(frameImg);
+      const outerBox = cachedMetrics?.outerBox || { x: 0, y: 0, w: frameBox.w, h: frameBox.h };
       if (!cachedMetrics) {
-        const metrics = { frameBox, outerBox };
+        const metrics = {
+          frameBox,
+          outerBox,
+          opaqueBounds: getOpaqueBoundsFromImage(frameImg),
+        };
         frameMetricsCacheRef.current.set(activeFrame.id, metrics);
         setFrameMetricsById((prev) => ({ ...prev, [activeFrame.id]: metrics }));
       }

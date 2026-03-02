@@ -215,7 +215,7 @@ export default function JogoMemoria() {
           aria-live="polite"
         >
           <div className="memory-celebration-card">
-            🎉 Parabéns! Missão concluída, herói! 🦸‍♂️
+            🎉 Parabéns! Missão concluída, você é fera! 🦸‍♂️
           </div>
         </div>
       </div>

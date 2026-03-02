@@ -26,7 +26,7 @@ export default function Contatos() {
               </span>
               <span className="contatosItemText">
                 <span className="contatosItemLabel">Telefone</span>
-                <span className="contatosItemValue">(81) 99999-9999</span>
+                <span className="contatosItemValue">(81) 99137-6899</span>
               </span>
             </a>
             <a
@@ -39,7 +39,7 @@ export default function Contatos() {
               </span>
               <span className="contatosItemText">
                 <span className="contatosItemLabel">WhatsApp</span>
-                <span className="contatosItemValue">(81) 99999-9999</span>
+                <span className="contatosItemValue">(81) 99137-6899</span>
               </span>
             </a>
             <a
