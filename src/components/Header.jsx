@@ -1,14 +1,47 @@
 import { useEffect, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import logoHeitor from "../assets/images/1aninho-meio.jpeg";
 
 const navItems = [
-  { to: "/", label: "Início" },
-  { to: "/super-heitor", label: "Super Heitor" },
-  { to: "/jogo", label: "Jogo da Memória" },
-  { to: "/album-de-fotos", label: "Álbum Virtual" },
-  { to: "/contatos", label: "Contatos" },
+  { to: { pathname: "/", hash: "#topo" }, hash: "#topo", label: "Início" },
+  {
+    to: { pathname: "/", hash: "#super-heitor" },
+    hash: "#super-heitor",
+    label: "Super Heitor",
+  },
+  {
+    to: { pathname: "/", hash: "#jogo-da-memoria" },
+    hash: "#jogo-da-memoria",
+    label: "Jogo da Memória",
+  },
+  {
+    to: { pathname: "/", hash: "#album-virtual" },
+    hash: "#album-virtual",
+    label: "Álbum Virtual",
+  },
+  {
+    to: { pathname: "/", hash: "#contatos" },
+    hash: "#contatos",
+    label: "Contatos",
+  },
 ];
+
+const scrollToMenuTarget = (hash) => {
+  if (!hash || hash === "#topo") {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+
+  const target = document.querySelector(hash);
+  if (!target) return;
+
+  const headerHeight =
+    document.querySelector(".siteHeader")?.getBoundingClientRect().height ?? 0;
+  const targetTop =
+    target.getBoundingClientRect().top + window.scrollY - headerHeight - 12;
+
+  window.scrollTo({ top: Math.max(targetTop, 0), behavior: "smooth" });
+};
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -16,7 +49,13 @@ export default function Header() {
 
   useEffect(() => {
     setMenuOpen(false);
-  }, [location.pathname]);
+  }, [location.pathname, location.hash]);
+
+  const isItemActive = (item) => {
+    if (location.pathname !== "/") return false;
+    if (item.hash === "#topo") return !location.hash || location.hash === "#topo";
+    return location.hash === item.hash;
+  };
 
   return (
     <header className="siteHeader">
@@ -42,17 +81,24 @@ export default function Header() {
 
       <nav id="site-nav" className={`siteNav ${menuOpen ? "isOpen" : ""}`}>
         {navItems.map((item) => (
-          <NavLink
-            key={item.to}
+          <Link
+            key={item.hash}
             to={item.to}
-            end={item.to === "/"}
-            className={({ isActive }) =>
-              `navLink${isActive ? " active" : ""}`
-            }
-            onClick={() => setMenuOpen(false)}
+            className={`navLink${isItemActive(item) ? " active" : ""}`}
+            onClick={(event) => {
+              setMenuOpen(false);
+
+              if (
+                location.pathname === item.to.pathname &&
+                location.hash === item.hash
+              ) {
+                event.preventDefault();
+                scrollToMenuTarget(item.hash);
+              }
+            }}
           >
             {item.label}
-          </NavLink>
+          </Link>
         ))}
       </nav>
     </header>

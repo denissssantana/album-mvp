@@ -138,6 +138,8 @@ a {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
 .brandMark {
@@ -161,6 +163,7 @@ a {
   display: flex;
   flex-direction: column;
   line-height: 1.05;
+  min-width: 0;
 }
 
 .brandTitle {
@@ -168,6 +171,11 @@ a {
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.02em;
+  display: block;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .brandSubtitle {
@@ -243,6 +251,10 @@ a {
   color: var(--ink-100);
   z-index: 190;
   backdrop-filter: blur(8px);
+}
+
+.siteFooter--withBackAction {
+  justify-content: space-between;
 }
 
 .footerText {
@@ -942,6 +954,10 @@ a {
   width: 100%;
 }
 
+.appCard[id] {
+  scroll-margin-top: calc(var(--headerTotal) + 12px);
+}
+
 .superHeitorImage {
   background:
     linear-gradient(135deg, rgba(56, 103, 186, 0.34), rgba(205, 229, 255, 0.14)),
@@ -984,10 +1000,12 @@ a {
 }
 
 .albumImage {
-  width: min(100%, 84%);
+  width: 100%;
   border-radius: 14px;
-  background: #ffffff;
-  background-color: #ffffff;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(171, 209, 255, 0.22), transparent 40%),
+    linear-gradient(135deg, rgba(48, 88, 170, 0.3), rgba(24, 46, 96, 0.2)),
+    linear-gradient(120deg, rgba(15, 31, 73, 0.92), rgba(7, 16, 40, 0.98));
   box-shadow: 0 12px 24px rgba(5, 12, 28, 0.45);
 }
 

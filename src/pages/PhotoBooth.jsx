@@ -230,6 +230,27 @@ export default function PhotoBooth() {
     setCameraError(null);
   }
 
+  function clearPhotoState() {
+    if (activePhotoUrlRef.current) {
+      URL.revokeObjectURL(activePhotoUrlRef.current);
+      activePhotoUrlRef.current = null;
+    }
+
+    setPhoto(null);
+    setScale(INITIAL_PHOTO_SCALE);
+    setPosition({ x: 0, y: 0 });
+    setRotation(0);
+    setFrameMetricsReady(false);
+    setSelectedFrame(frameItems[0].id);
+  }
+
+  function resetToIntroScreen() {
+    closeCamera();
+    clearPhotoState();
+    setStep("captura");
+    setStatus("idle");
+  }
+
   useEffect(() => {
     return () => {
       stopCameraStream();
@@ -239,6 +260,27 @@ export default function PhotoBooth() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    const handleFooterBackRequest = (event) => {
+      if (step === "moldura" && photo && !isCameraOpen) {
+        handleRetakePhoto();
+        event.preventDefault();
+        return;
+      }
+
+      if (isCameraOpen) {
+        resetToIntroScreen();
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener("photobooth:back-request", handleFooterBackRequest);
+
+    return () => {
+      window.removeEventListener("photobooth:back-request", handleFooterBackRequest);
+    };
+  }, [handleRetakePhoto, isCameraOpen, photo, resetToIntroScreen, step]);
 
   useEffect(() => {
     const el = previewViewportRef.current;
@@ -855,7 +897,7 @@ export default function PhotoBooth() {
           <div className="photoBooth__topCopy">
             <h1 className="page-title albumPageTitle">Álbum Virtual</h1>
             <p className="superHeitorSubtitle photoBooth__headline">
-              Tire uma foto, guarde pra você e mande para Heitor
+              Tire uma foto, compartilhe em suas redes sociais e ajude Heitor a ter lindas recordações da sua festinha!
             </p>
           </div>
 

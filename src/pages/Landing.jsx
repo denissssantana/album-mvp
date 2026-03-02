@@ -34,7 +34,7 @@ export default function Landing() {
 
       <section className="sectionCard appsSection" id="aplicacoes">
         <div className="appsGrid">
-          <article className="appCard">
+          <article className="appCard" id="super-heitor">
             <div className="ctaContent">
               <h3>Super Heitor</h3>
             </div>
@@ -53,7 +53,7 @@ export default function Landing() {
             </div>
           </article>
 
-          <article className="appCard">
+          <article className="appCard" id="jogo-da-memoria">
             <div className="ctaContent">
               <h3>Jogo da Memória</h3>
             </div>
@@ -72,7 +72,7 @@ export default function Landing() {
             </div>
           </article>
 
-          <article className="appCard">
+          <article className="appCard" id="album-virtual">
             <div className="ctaContent">
               <h3>Álbum Virtual</h3>
             </div>
@@ -96,7 +96,7 @@ export default function Landing() {
             </div>
           </article>
 
-          <article className="appCard">
+          <article className="appCard" id="contatos">
             <div className="ctaContent">
               <h3>Contato</h3>
             </div>

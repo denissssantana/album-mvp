@@ -12,17 +12,17 @@ import superHeitor10 from "../assets/super-heitor/super-heitor-10.png";
 import superHeitor11 from "../assets/super-heitor/super-heitor-11.png";
 
 const superHeitorHeroes = [
-  { id: "heitor-1", name: "HEITOR", image: superHeitor1 },
-  { id: "heitor-2", name: "HEITOR", image: superHeitor2 },
-  { id: "heitor-3", name: "HEITOR", image: superHeitor3 },
-  { id: "heitor-4", name: "HEITOR", image: superHeitor4 },
-  { id: "heitor-5", name: "HEITOR", image: superHeitor5 },
-  { id: "heitor-6", name: "HEITOR", image: superHeitor6 },
-  { id: "heitor-7", name: "HEITOR", image: superHeitor7 },
-  { id: "heitor-8", name: "HEITOR", image: superHeitor8 },
-  { id: "heitor-9", name: "HEITOR", image: superHeitor9 },
-  { id: "heitor-10", name: "HEITOR", image: superHeitor10 },
-  { id: "heitor-11", name: "HEITOR", image: superHeitor11 },
+  { id: "heitor-1", name: "AQUA-HEITOR", image: superHeitor1 },
+  { id: "heitor-2", name: "CAPITÃO HEITOR", image: superHeitor2 },
+  { id: "heitor-3", name: "HUKTOR", image: superHeitor3 },
+  { id: "heitor-4", name: "BAT-HEITOR", image: superHeitor4 },
+  { id: "heitor-5", name: "FLASH-HEITOR", image: superHeitor5 },
+  { id: "heitor-6", name: "SUPER HEITOR", image: superHeitor6 },
+  { id: "heitor-7", name: "HEITOR ARANHA", image: superHeitor7 },
+  { id: "heitor-8", name: "PANTERA HEITOR", image: superHeitor8 },
+  { id: "heitor-9", name: "HEITOR STARK", image: superHeitor9 },
+  { id: "heitor-10", name: "HEITHOR", image: superHeitor10 },
+  { id: "heitor-11", name: "HEITORVERINE", image: superHeitor11 },
 ];
 
 export default function SuperHeitor() {
