@@ -384,6 +384,16 @@
   height: 44px;
 }
 
+.photoBooth__frameArrow--left {
+  position: relative;
+  left: -16px;
+}
+
+.photoBooth__frameArrow--right {
+  position: relative;
+  right: -16px;
+}
+
 .photoBooth__editingBar {
   position: static;
   left: auto;
@@ -547,7 +557,7 @@
   justify-content: flex-start;
   margin: 0;
   padding: 0;
-  gap: 16px;
+  gap: 12px;
   overflow: hidden;
 }
 
@@ -583,7 +593,7 @@
 .buttons-container {
   flex: 0 0 auto;
   margin-top: 0;
-  padding: 28px 0 0;
+  padding: 12px 0 0;
 }
 
 .camera-actions {
@@ -657,7 +667,7 @@
     max-height: clamp(
       284px,
       calc((var(--vh) * 100) - var(--headerTotal) - var(--footerTotal) - var(--barH) - 196px),
-      48svh
+      49svh
     );
   }
 
