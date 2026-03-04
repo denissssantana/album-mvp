@@ -12,6 +12,11 @@
   overflow: hidden;
 }
 
+.photoBoothPage .albumMain:has(.photoBooth__containerRoot--editing) {
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
 .photo-editor-container {
   min-height: 0;
   flex: 1;
@@ -43,7 +48,7 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 12px;
+  gap: 6px;
 }
 
 .photoBoothPage .albumPageTitle {
@@ -239,7 +244,7 @@
   align-items: flex-start;
   flex: 1;
   min-height: 0;
-  padding-top: 12px;
+  padding-top: 4px;
   padding-bottom: 0;
   overflow: visible;
 }
@@ -249,7 +254,7 @@
 }
 
 .photoBooth__headline {
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   max-width: 720px;
   align-self: center;
 }
@@ -401,20 +406,20 @@
   bottom: auto;
   min-height: auto;
   z-index: auto;
-  margin-top: 38px;
-  padding: 10px 0 18px;
+  margin-top: 2px;
+  padding: 4px 0 8px;
   box-shadow: none;
   border-top: 0;
   background: transparent;
 }
 
 .editor-actions {
-  padding: 10px 16px 16px;
+  padding: 8px 16px 8px;
   display: flex;
   justify-content: center;
   gap: 12px;
-  margin-top: 12px;
-  margin-bottom: 20px;
+  margin-top: 2px;
+  margin-bottom: 0;
 }
 
 .editor-stage-wrapper {
@@ -438,10 +443,13 @@
 
 .editor-actions .btn-standard {
   flex: 1;
-  max-width: 180px;
+  max-width: 150px;
   min-width: 0;
-  padding: 10px 0;
-  min-height: 42px;
+  padding: 8px 0;
+  min-height: 36px;
+  font-size: 12px;
+  border-radius: 20px;
+  line-height: 1.1;
 }
 
 .photoBooth__frameCarousel {
@@ -695,6 +703,6 @@
 
 @media (max-height: 700px) {
   .editor-actions {
-    padding-bottom: 30px;
+    padding-bottom: 6px;
   }
 }
