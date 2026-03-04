@@ -171,9 +171,9 @@ export default function JogoMemoria() {
   return (
     <div className="memory-page">
       <div className="memory-header">
-        <h1 className="page-title">Jogo da Memoria</h1>
+        <h1 className="page-title">Jogo da Memória</h1>
         <p className="memory-sub">
-          Toque nas cartas e encontre as imagens iguais.
+          Neste desafio toque nas cartas e encontre as Heróis iguais, vamos ver em quanto tempo você consegue encontrar todos os pares!
         </p>
       </div>
 

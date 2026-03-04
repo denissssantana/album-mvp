@@ -12,6 +12,7 @@ import "./PhotoBooth.css";
 const FRAME_ART_SIZE = { w: 519, h: 821 };
 const FRAME_PHOTO_MASK = { x: 35, y: 35, w: 449, h: 611, r: 0 };
 const INITIAL_PHOTO_SCALE = 0.94;
+const HEITOR_UPLOAD_ENDPOINT = "https://script.google.com/macros/s/AKfycbzqc07PnFbtC55AtShmJ5LnTqQ1db_0YEzXjaqYxpbjcs1RITbNyE3TMwnTBRIv9Ihb/exec";
 
 function loadImageElement(src) {
   return new Promise((resolve, reject) => {
@@ -45,6 +46,21 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y + h, x, y, rr);
   ctx.arcTo(x, y, x + w, y, rr);
   ctx.closePath();
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      const base64data = reader.result.split(",")[1];
+      resolve(base64data);
+    };
+
+    reader.onerror = reject;
+
+    reader.readAsDataURL(blob);
+  });
 }
 
 function getNormalizedRotation(rotation) {
@@ -789,6 +805,29 @@ export default function PhotoBooth() {
     transform: `translate(-50%, -50%) translate(${position.x}px, ${position.y}px) rotate(${rotation}deg) scale(${scale})`,
   };
 
+  async function enviarParaHeitor(blob) {
+    try {
+      const base64 = await blobToBase64(blob);
+
+      const formData = new FormData();
+      formData.append("file", base64);
+
+      const response = await fetch(HEITOR_UPLOAD_ENDPOINT, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro no upload");
+      }
+
+      alert("Foto enviada para o álbum do Heitor 🎉");
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível enviar a foto. Tente novamente.");
+    }
+  }
+
   async function handleSendToHeitor() {
     if (!photo || status === "exporting") return;
     setStatus("exporting");
@@ -816,8 +855,20 @@ export default function PhotoBooth() {
     } catch (err) {
       if (err?.name !== "AbortError") {
         console.error("PhotoBooth share error:", err);
-        alert("Falha ao enviar para Heitor.");
+        alert("Falha ao compartilhar foto.");
       }
+    } finally {
+      setStatus("editing");
+    }
+  }
+
+  async function handleUploadToHeitor() {
+    if (!photo || status === "exporting") return;
+    setStatus("exporting");
+    try {
+      const blob = await buildFinalJpegForOutput();
+      if (!blob) return;
+      await enviarParaHeitor(blob);
     } finally {
       setStatus("editing");
     }
@@ -897,7 +948,7 @@ export default function PhotoBooth() {
           <div className="photoBooth__topCopy">
             <h1 className="page-title albumPageTitle">Álbum Virtual</h1>
             <p className="superHeitorSubtitle photoBooth__headline">
-              Tire uma foto, compartilhe em suas redes sociais e ajude Heitor a ter lindas recordações da sua festinha!
+              Tire uma foto bem legal, ajuste na moldura, guarde ou compartilhe em suas redes sociais. Mas não esqueça de enviar para Heitor, ele esta esperando receber essa linda recordação!
             </p>
           </div>
 
@@ -1024,6 +1075,14 @@ export default function PhotoBooth() {
                 type="button"
                 className="btn-standard"
                 onClick={handleSendToHeitor}
+                disabled={!photo || status === "exporting"}
+              >
+                Compartilhar
+              </button>
+              <button
+                type="button"
+                className="btn-standard"
+                onClick={handleUploadToHeitor}
                 disabled={!photo || status === "exporting"}
               >
                 Enviar para Heitor

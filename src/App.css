@@ -239,11 +239,11 @@ a {
   right: 0;
   bottom: 0;
   height: var(--footerTotal);
-  padding: 8px 12px calc(8px + var(--safeB));
+  padding: 8px 20px calc(8px + var(--safeB));
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
+  justify-content: center;
+  gap: 20px;
   background:
     linear-gradient(180deg, rgba(10, 18, 40, 0.95), rgba(8, 14, 32, 0.98)),
     linear-gradient(120deg, rgba(20, 35, 72, 0.9), rgba(8, 14, 32, 0.95));
@@ -253,8 +253,17 @@ a {
   backdrop-filter: blur(8px);
 }
 
+.siteFooter:not(.siteFooter--withBackAction) {
+  justify-content: flex-end;
+  padding-left: 30px;
+  padding-right: 30px;
+}
+
 .siteFooter--withBackAction {
-  justify-content: space-between;
+  justify-content: center;
+  gap: 32px;
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 .footerText {
@@ -281,6 +290,10 @@ a {
 }
 
 .footerLink {
+  width: 120px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: #fff;
   font-weight: 700;
   text-decoration: none;
@@ -369,7 +382,7 @@ a {
 }
 
 .page-title {
-  margin: 0;
+  margin: 10;
   font-family: "Orbitron", "Trebuchet MS", sans-serif;
   font-size: clamp(28px, 5vw, 34px);
   font-weight: 700;
@@ -1058,7 +1071,7 @@ a {
   margin: 4px auto 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 18px;
 }
 
 .contatosItem {
@@ -1079,12 +1092,12 @@ a {
 }
 
 .contatosItemIcon {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   border-radius: 12px;
   display: grid;
   place-items: center;
-  font-size: 18px;
+  font-size: 20px;
   color: var(--ink-100);
   background: rgba(131, 179, 243, 0.18);
   border: 1px solid rgba(160, 204, 255, 0.34);
@@ -1347,6 +1360,19 @@ a {
     padding: 8px 10px calc(8px + var(--safeB));
   }
 
+  .siteFooter:not(.siteFooter--withBackAction) {
+    justify-content: flex-end;
+    padding-left: 30px;
+    padding-right: 30px;
+  }
+
+  .siteFooter.siteFooter--withBackAction {
+    justify-content: space-between;
+    gap: 0;
+    padding-left: 30px;
+    padding-right: 30px;
+  }
+
   .footerText {
     font-size: 12px;
   }
@@ -1567,8 +1593,12 @@ a {
 
 @media (max-width: 759px) {
   .landingPage {
-    padding: 10px 12px calc(10px + 22px);
-    gap: 10px;
+    padding: 10px 12px calc(10px + 44px);
+    gap: 60px;
+  }
+
+  .appsGrid {
+    gap: 60px;
   }
 
   .hero {

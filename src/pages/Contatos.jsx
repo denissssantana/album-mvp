@@ -18,7 +18,7 @@ export default function Contatos() {
           <div className="contatosList">
             <a
               className="contatosItem"
-              href="tel:+5581999999999"
+              href="tel:+5581991376899"
               aria-label="Telefone (81) 99999-9999"
             >
               <span className="contatosItemIcon" aria-hidden="true">
@@ -31,7 +31,7 @@ export default function Contatos() {
             </a>
             <a
               className="contatosItem"
-              href="https://wa.me/5581999999999"
+              href="https://wa.me/5581991376899"
               aria-label="WhatsApp (81) 99999-9999"
             >
               <span className="contatosItemIcon" aria-hidden="true">
@@ -44,7 +44,7 @@ export default function Contatos() {
             </a>
             <a
               className="contatosItem"
-              href="mailto:contato@appdoheitor.com"
+              href="mailto:denisss.dev@gmail.com"
               aria-label="Email contato@appdoheitor.com"
             >
               <span className="contatosItemIcon" aria-hidden="true">
@@ -53,19 +53,6 @@ export default function Contatos() {
               <span className="contatosItemText">
                 <span className="contatosItemLabel">Email</span>
                 <span className="contatosItemValue">denisss.dev@gmail.com</span>
-              </span>
-            </a>
-            <a
-              className="contatosItem"
-              href="https://www.appdoheitor.com"
-              aria-label="Site www.appdoheitor.com"
-            >
-              <span className="contatosItemIcon" aria-hidden="true">
-                🌐
-              </span>
-              <span className="contatosItemText">
-                <span className="contatosItemLabel">Site</span>
-                <span className="contatosItemValue">www.appdoheitor.com</span>
               </span>
             </a>
           </div>
