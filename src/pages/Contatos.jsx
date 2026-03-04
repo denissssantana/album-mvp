@@ -52,7 +52,7 @@ export default function Contatos() {
               </span>
               <span className="contatosItemText">
                 <span className="contatosItemLabel">Email</span>
-                <span className="contatosItemValue">contato@appdoheitor.com</span>
+                <span className="contatosItemValue">denisss.dev@gmail.com</span>
               </span>
             </a>
             <a

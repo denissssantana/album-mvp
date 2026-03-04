@@ -1015,14 +1015,6 @@ export default function PhotoBooth() {
               <button
                 type="button"
                 className="btn-standard"
-                onClick={handleRetakePhoto}
-                disabled={status === "exporting"}
-              >
-                Nova foto
-              </button>
-              <button
-                type="button"
-                className="btn-standard"
                 onClick={handleSavePhoto}
                 disabled={!photo || status === "exporting"}
               >
