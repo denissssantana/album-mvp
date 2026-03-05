@@ -186,6 +186,7 @@ export default function PhotoBooth() {
   const [rotation, setRotation] = useState(0);
   const [step, setStep] = useState("captura");
   const [status, setStatus] = useState("idle");
+  const [showUploadSuccess, setShowUploadSuccess] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [previewMaskSize, setPreviewMaskSize] = useState({ width: 0, height: 0 });
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -821,7 +822,7 @@ export default function PhotoBooth() {
         throw new Error("Erro no upload");
       }
 
-      alert("Foto enviada para o álbum do Heitor 🎉");
+      setShowUploadSuccess(true);
     } catch (err) {
       console.error(err);
       alert("Não foi possível enviar a foto. Tente novamente.");
@@ -1090,6 +1091,31 @@ export default function PhotoBooth() {
             </div>
           </div>
         ) : null}
+
+        {status === "exporting" && (
+          <div className="uploadOverlay">
+            <div className="uploadBox">
+              <div className="uploadSpinner"></div>
+              <p>Enviando foto para o álbum do Heitor...</p>
+            </div>
+          </div>
+        )}
+
+        {showUploadSuccess && (
+          <div className="successOverlay">
+            <div className="successBox">
+              <div className="successIcon">🎉</div>
+              <p>Foto enviada para o álbum do Heitor!</p>
+
+              <button
+                className="btn-standard"
+                onClick={() => setShowUploadSuccess(false)}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
