@@ -798,3 +798,36 @@
   font-weight: 600;
   margin-bottom: 18px;
 }
+
+.photoSendAnimation {
+  position: fixed;
+  bottom: 35%;
+  left: 50%;
+  transform: translate(-50%, 0) scale(1);
+  width: 140px;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+  animation: flyToAlbum 0.9s ease forwards;
+  z-index: 700;
+}
+
+@keyframes flyToAlbum {
+
+  0% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+
+  40% {
+    transform: translate(-50%, -40px) scale(0.9);
+  }
+
+  70% {
+    transform: translate(120px, -160px) scale(0.5);
+  }
+
+  100% {
+    transform: translate(180px, -240px) scale(0.2);
+    opacity: 0;
+  }
+}

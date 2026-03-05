@@ -187,6 +187,8 @@ export default function PhotoBooth() {
   const [step, setStep] = useState("captura");
   const [status, setStatus] = useState("idle");
   const [showUploadSuccess, setShowUploadSuccess] = useState(false);
+  const [showSendAnimation, setShowSendAnimation] = useState(false);
+  const [sentPhotoPreview, setSentPhotoPreview] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [previewMaskSize, setPreviewMaskSize] = useState({ width: 0, height: 0 });
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -822,7 +824,13 @@ export default function PhotoBooth() {
         throw new Error("Erro no upload");
       }
 
-      setShowUploadSuccess(true);
+      setSentPhotoPreview(URL.createObjectURL(blob));
+      setShowSendAnimation(true);
+
+      setTimeout(() => {
+        setShowSendAnimation(false);
+        setShowUploadSuccess(true);
+      }, 900);
     } catch (err) {
       console.error(err);
       alert("Não foi possível enviar a foto. Tente novamente.");
@@ -1115,6 +1123,14 @@ export default function PhotoBooth() {
               </button>
             </div>
           </div>
+        )}
+
+        {showSendAnimation && sentPhotoPreview && (
+          <img
+            src={sentPhotoPreview}
+            className="photoSendAnimation"
+            alt="foto enviada"
+          />
         )}
       </main>
     </div>
