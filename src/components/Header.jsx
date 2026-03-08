@@ -46,6 +46,7 @@ const scrollToMenuTarget = (hash) => {
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const isEventoEncerradoPage = location.pathname === "/evento-encerrado";
 
   useEffect(() => {
     setMenuOpen(false);
@@ -66,41 +67,45 @@ export default function Header() {
         </div>
       </div>
 
-      <button
-        className="menuButton"
-        type="button"
-        aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
-        aria-expanded={menuOpen}
-        aria-controls="site-nav"
-        onClick={() => setMenuOpen((open) => !open)}
-      >
-        <span className="menuLine" />
-        <span className="menuLine" />
-        <span className="menuLine" />
-      </button>
-
-      <nav id="site-nav" className={`siteNav ${menuOpen ? "isOpen" : ""}`}>
-        {navItems.map((item) => (
-          <Link
-            key={item.hash}
-            to={item.to}
-            className={`navLink${isItemActive(item) ? " active" : ""}`}
-            onClick={(event) => {
-              setMenuOpen(false);
-
-              if (
-                location.pathname === item.to.pathname &&
-                location.hash === item.hash
-              ) {
-                event.preventDefault();
-                scrollToMenuTarget(item.hash);
-              }
-            }}
+      {!isEventoEncerradoPage ? (
+        <>
+          <button
+            className="menuButton"
+            type="button"
+            aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
+            aria-expanded={menuOpen}
+            aria-controls="site-nav"
+            onClick={() => setMenuOpen((open) => !open)}
           >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+            <span className="menuLine" />
+            <span className="menuLine" />
+            <span className="menuLine" />
+          </button>
+
+          <nav id="site-nav" className={`siteNav ${menuOpen ? "isOpen" : ""}`}>
+            {navItems.map((item) => (
+              <Link
+                key={item.hash}
+                to={item.to}
+                className={`navLink${isItemActive(item) ? " active" : ""}`}
+                onClick={(event) => {
+                  setMenuOpen(false);
+
+                  if (
+                    location.pathname === item.to.pathname &&
+                    location.hash === item.hash
+                  ) {
+                    event.preventDefault();
+                    scrollToMenuTarget(item.hash);
+                  }
+                }}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </>
+      ) : null}
     </header>
   );
 }

@@ -7,6 +7,7 @@ import Album from "./pages/Album";
 import JogoMemoria from "./pages/JogoMemoria";
 import SuperHeitor from "./pages/SuperHeitor";
 import Contatos from "./pages/Contatos";
+import EventoEncerrado from "./pages/EventoEncerrado";
 import "./App.css";
 
 const PhotoBooth = React.lazy(() => import("./pages/PhotoBooth"));
@@ -51,12 +52,19 @@ export default function App() {
         <main className="appMain">
           <Suspense fallback={null}>
             <Routes>
-              <Route path="/" element={<Landing />} />
+              <Route path="/" element={<EventoEncerrado />} />
+              <Route path="/dev_d3n15" element={<Landing />} />
+              <Route path="/dev_d3n15/super-heitor" element={<SuperHeitor />} />
+              <Route path="/dev_d3n15/album" element={<Album />} />
+              <Route path="/dev_d3n15/album-de-fotos" element={<PhotoBooth />} />
+              <Route path="/dev_d3n15/jogo" element={<JogoMemoria />} />
+              <Route path="/dev_d3n15/contatos" element={<Contatos />} />
               <Route path="/super-heitor" element={<SuperHeitor />} />
               <Route path="/album" element={<Album />} />
               <Route path="/album-de-fotos" element={<PhotoBooth />} />
               <Route path="/jogo" element={<JogoMemoria />} />
               <Route path="/contatos" element={<Contatos />} />
+              <Route path="/evento-encerrado" element={<EventoEncerrado />} />
             </Routes>
           </Suspense>
         </main>

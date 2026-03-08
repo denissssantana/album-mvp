@@ -14,12 +14,23 @@ export default function Footer() {
   const location = useLocation();
   const navigate = useNavigate();
   const isHome = location.pathname === "/";
+  const isEventoEncerradoPage = location.pathname === "/evento-encerrado";
   const backTarget = backTargetsByPath[location.pathname] ?? null;
   const [renderBackLink, setRenderBackLink] = useState(false);
   const [showBackLink, setShowBackLink] = useState(false);
   const exitTimerRef = useRef(null);
 
   useEffect(() => {
+    if (isEventoEncerradoPage) {
+      if (exitTimerRef.current) {
+        clearTimeout(exitTimerRef.current);
+        exitTimerRef.current = null;
+      }
+      setRenderBackLink(false);
+      setShowBackLink(false);
+      return;
+    }
+
     if (!isHome) {
       if (exitTimerRef.current) {
         clearTimeout(exitTimerRef.current);
@@ -85,7 +96,7 @@ export default function Footer() {
         exitTimerRef.current = null;
       }
     };
-  }, [isHome]);
+  }, [isHome, isEventoEncerradoPage]);
 
   const handleBackToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -108,7 +119,7 @@ export default function Footer() {
 
   return (
     <footer className={`siteFooter${backTarget ? " siteFooter--withBackAction" : ""}`}>
-      {backTarget ? (
+      {!isEventoEncerradoPage && backTarget ? (
         <Link
           className="footerLink"
           to={backTarget}
@@ -118,7 +129,7 @@ export default function Footer() {
         </Link>
       ) : null}
 
-      {renderBackLink ? (
+      {!isEventoEncerradoPage && renderBackLink ? (
         <Link
           className={`footerLink${showBackLink ? " footerLink--animated" : " footerLink--hidden"}`}
           to="/"
